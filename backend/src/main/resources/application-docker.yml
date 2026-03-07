@@ -1,0 +1,13 @@
+# Профиль для запуска в Docker (docker-compose)
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres:5432/pharma
+    username: pharma
+    password: pharma
+  data:
+    redis:
+      host: redis
+
+app:
+  frontend:
+    url: http://localhost:5173

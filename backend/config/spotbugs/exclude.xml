@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<FindBugsFilter xmlns="https://github.com/spotbugs/filter/3.0.0">
+    <!-- Игнорировать DTO/entity по дизайну -->
+    <Match>
+        <Class name="~.*Dto$"/>
+    </Match>
+    <Match>
+        <Class name="~.*Request$"/>
+    </Match>
+    <Match>
+        <Class name="~.*\.entity\.*"/>
+    </Match>
+</FindBugsFilter>

@@ -1,0 +1,64 @@
+package com.pharma.infrastructure.web;
+
+import com.pharma.application.dto.CategoryDto;
+import com.pharma.application.service.CategoryService;
+import io.swagger.v3.oas.annotations.Operation;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
+
+@RestController
+@RequestMapping("/categories")
+@RequiredArgsConstructor
+public class CategoryController {
+
+    private final CategoryService categoryService;
+
+    @GetMapping
+    @Operation(summary = "Список категорий")
+    public ResponseEntity<Page<CategoryDto>> list(Pageable pageable) {
+        return ResponseEntity.ok(categoryService.findAll(pageable));
+    }
+
+    @GetMapping("/{id}")
+    @Operation(summary = "Получить категорию по ID")
+    public ResponseEntity<CategoryDto> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(categoryService.findById(id));
+    }
+
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Создать категорию")
+    public ResponseEntity<CategoryDto> create(@RequestBody Map<String, String> body) {
+        CategoryDto created = categoryService.create(
+                body.getOrDefault("name", ""),
+                body.get("description")
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Обновить категорию")
+    public ResponseEntity<CategoryDto> update(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        return ResponseEntity.ok(categoryService.update(
+                id,
+                body.getOrDefault("name", ""),
+                body.get("description")
+        ));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Удалить категорию")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        categoryService.delete(id);
+        return ResponseEntity.noContent().build();
+    }
+}

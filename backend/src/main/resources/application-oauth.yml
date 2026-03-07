@@ -1,0 +1,13 @@
+# OAuth2 Google (включить при наличии GOOGLE_CLIENT_ID)
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:}
+            client-secret: ${GOOGLE_CLIENT_SECRET:}
+            scope: openid, profile, email
+        provider:
+          google:
+            user-name-attribute: sub
