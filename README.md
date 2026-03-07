@@ -21,7 +21,7 @@ chmod +x run.sh
 - если чего-то не удаётся получить автоматически — выводит, **что именно отсутствует** и что сделать;
 - запускает backend и frontend (на Windows — в двух отдельных окнах).
 
-После запуска откройте в браузере **http://localhost:5173**. Демо-вход: **admin** / **password**.
+После запуска откройте в браузере **http://localhost:5173**.
 
 ---
 
@@ -62,7 +62,7 @@ npm install
 npm run dev
 ```
 
-Откройте http://localhost:5173. Демо-вход: **admin** / **password**.
+Откройте http://localhost:5173.
 
 ## Запуск через Docker Compose (backend + frontend + БД)
 
@@ -71,8 +71,33 @@ npm run dev
 docker compose --profile full up -d --build
 ```
 
+Можно создать `.env` на основе `.env.example` и запускать без длинной команды:
+
+```bash
+cp .env.example .env
+# заполните GOOGLE_CLIENT_ID/GOOGLE_CLIENT_SECRET
+docker compose --profile full up -d --build
+```
+
+По умолчанию OAuth2 redirect после логина ведёт на `http://localhost`.
+При развёртывании на другом домене задайте переменную окружения перед запуском:
+
+```bash
+APP_FRONTEND_URL=https://your-domain.example docker compose --profile full up -d --build
+```
+
 - Frontend: http://localhost  
 - Backend API: http://localhost:8080/api/v1  
+
+
+Для входа через Google (OAuth2) передайте переменные окружения:
+
+```bash
+GOOGLE_CLIENT_ID=your-client-id \
+GOOGLE_CLIENT_SECRET=your-client-secret \
+APP_FRONTEND_URL=http://localhost \
+  docker compose --profile full up -d --build
+```
 
 ## Структура проекта
 
@@ -130,5 +155,5 @@ PharmaApp/
 
 ## Демо-данные
 
-После первого запуска Flyway создаёт роли (ADMIN, PHARMACIST, CASHIER), пользователя **admin** (пароль **password**), категории, поставщиков и несколько лекарств с остатками.
+После первого запуска Flyway применяются миграции, включая `V2__demo_data.sql` с тестовыми записями (админ-пользователь, категории, поставщики, лекарства). Для production рекомендуется заменить или отключить этот seed-набор.
  
