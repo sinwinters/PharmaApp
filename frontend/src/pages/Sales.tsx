@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { salesList, createSale, type SaleItemRequest } from '../api/sales'
+import { salesList, createSale, benefitsRbList, type SaleItemRequest } from '../api/sales'
 import { drugsApi } from '../api/drugs'
 
 export default function Sales() {
@@ -8,6 +8,10 @@ export default function Sales() {
   const [cart, setCart] = useState<SaleItemRequest[]>([])
   const [drugId, setDrugId] = useState<number | ''>('')
   const [qty, setQty] = useState(1)
+  const [benefitCode, setBenefitCode] = useState('')
+  const [prescriptionNumber, setPrescriptionNumber] = useState('')
+  const [edsSignature, setEdsSignature] = useState('')
+  const [error, setError] = useState('')
   const queryClient = useQueryClient()
 
   const { data, isLoading } = useQuery({
@@ -20,12 +24,24 @@ export default function Sales() {
     queryFn: () => drugsApi({ page: 0, size: 500 }),
   })
 
+  const { data: benefits } = useQuery({
+    queryKey: ['rb-benefits'],
+    queryFn: benefitsRbList,
+  })
+
   const createMu = useMutation({
     mutationFn: createSale,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sales'] })
       queryClient.invalidateQueries({ queryKey: ['drugs'] })
       setCart([])
+      setBenefitCode('')
+      setPrescriptionNumber('')
+      setEdsSignature('')
+      setError('')
+    },
+    onError: (e: any) => {
+      setError(e?.response?.data?.error ?? 'Не удалось провести продажу')
     },
   })
 
@@ -42,6 +58,19 @@ export default function Sales() {
 
   const removeFromCart = (drugId: number) => setCart((c) => c.filter((x) => x.drugId !== drugId))
 
+  const selectedBenefit = benefits?.find((b) => b.code === benefitCode)
+
+  const submitSale = () => {
+    setError('')
+    createMu.mutate({
+      items: cart,
+      benefitCode: benefitCode || undefined,
+      prescriptionNumber: prescriptionNumber || undefined,
+      edsSignature: edsSignature || undefined,
+      edsProvider: prescriptionNumber || edsSignature ? 'AVEST' : undefined,
+    })
+  }
+
   const drugName = (id: number) => drugsData?.content.find((d) => d.id === id)?.name ?? id
 
   return (
@@ -51,7 +80,7 @@ export default function Sales() {
       <div style={{ background: '#fff', padding: 16, marginBottom: 24, borderRadius: 8 }}>
         <h3>Новая продажа</h3>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <select value={drugId} onChange={(e) => setDrugId(e.target.value === '' ? '' : Number(e.target.value))} style={{ padding: 8, minWidth: 200 }}>
+          <select value={drugId} onChange={(e) => setDrugId(e.target.value === '' ? '' : Number(e.target.value))} style={{ padding: 8, minWidth: 240 }}>
             <option value="">Выберите лекарство</option>
             {drugsData?.content.map((d) => (
               <option key={d.id} value={d.id}>{d.name} (остаток: {d.stockQuantity})</option>
@@ -60,6 +89,19 @@ export default function Sales() {
           <input type="number" min={1} value={qty} onChange={(e) => setQty(Number(e.target.value))} style={{ width: 60, padding: 8 }} />
           <button onClick={addToCart} style={{ padding: '8px 16px' }}>Добавить</button>
         </div>
+
+        <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <select value={benefitCode} onChange={(e) => setBenefitCode(e.target.value)} style={{ padding: 8, minWidth: 320 }}>
+            <option value="">Без льготы</option>
+            {benefits?.map((b) => (
+              <option key={b.code} value={b.code}>{b.title} ({b.discountPercent}%)</option>
+            ))}
+          </select>
+          <input placeholder="Электронный рецепт (номер)" value={prescriptionNumber} onChange={(e) => setPrescriptionNumber(e.target.value)} style={{ padding: 8, minWidth: 220 }} />
+          <input placeholder="ЭЦП Avest (подпись)" value={edsSignature} onChange={(e) => setEdsSignature(e.target.value)} style={{ padding: 8, minWidth: 220 }} />
+        </div>
+        {selectedBenefit && <p style={{ fontSize: 13, color: '#475569' }}>{selectedBenefit.lawReference}</p>}
+
         {cart.length > 0 && (
           <div style={{ marginTop: 16 }}>
             <ul style={{ listStyle: 'none', padding: 0 }}>
@@ -70,7 +112,8 @@ export default function Sales() {
                 </li>
               ))}
             </ul>
-            <button onClick={() => createMu.mutate(cart)} disabled={createMu.isPending} style={{ marginTop: 8 }}>Провести продажу</button>
+            {error && <p style={{ color: 'crimson' }}>{error}</p>}
+            <button onClick={submitSale} disabled={createMu.isPending} style={{ marginTop: 8 }}>Провести продажу</button>
           </div>
         )}
       </div>
@@ -84,6 +127,7 @@ export default function Sales() {
                 <th style={{ textAlign: 'left', padding: 12 }}>ID</th>
                 <th style={{ textAlign: 'left', padding: 12 }}>Дата</th>
                 <th style={{ textAlign: 'left', padding: 12 }}>Кассир</th>
+                <th style={{ textAlign: 'left', padding: 12 }}>Льгота</th>
                 <th style={{ textAlign: 'right', padding: 12 }}>Сумма</th>
               </tr>
             </thead>
@@ -93,6 +137,7 @@ export default function Sales() {
                   <td style={{ padding: 12 }}>{s.id}</td>
                   <td style={{ padding: 12 }}>{new Date(s.createdAt).toLocaleString()}</td>
                   <td style={{ padding: 12 }}>{s.username}</td>
+                  <td style={{ padding: 12 }}>{s.benefitCode ?? '—'}</td>
                   <td style={{ padding: 12, textAlign: 'right' }}>{s.totalAmount}</td>
                 </tr>
               ))}

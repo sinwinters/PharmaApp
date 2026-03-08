@@ -2,10 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useAuthStore } from '../store/authStore'
-import { login } from '../api/auth'
-
-// Для OAuth редирект должен идти на тот же origin (Vite проксирует /oauth2 на backend)
-const OAUTH_URL = '/oauth2/authorization/google'
+import { login, OAUTH_URL } from '../api/auth'
 
 type Form = { username: string; password: string }
 
@@ -28,24 +25,28 @@ export default function Login() {
   }
 
   return (
-    <div style={{ maxWidth: 400, margin: '80px auto', padding: 24, background: '#fff', borderRadius: 8, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-      <h1 style={{ marginTop: 0 }}>Вход</h1>
-      <form onSubmit={handleSubmit(onSubmit)}>
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', marginBottom: 4 }}>Логин</label>
-          <input {...register('username', { required: true })} style={{ width: '100%', padding: 8 }} />
-        </div>
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', marginBottom: 4 }}>Пароль</label>
-          <input type="password" {...register('password', { required: true })} style={{ width: '100%', padding: 8 }} />
-        </div>
-        {error && <p style={{ color: 'crimson', marginBottom: 16 }}>{error}</p>}
-        <button type="submit" style={{ padding: '10px 24px', cursor: 'pointer' }}>Войти</button>
-      </form>
-      <p style={{ marginTop: 16, fontSize: 14 }}>
-        <a href={OAUTH_URL}>Войти через Google</a>
-      </p>
-      <p style={{ marginTop: 8, fontSize: 12, color: '#666' }}>Демо: admin / password</p>
+    <div className="login-page">
+      <div className="login-card">
+        <h1>Вход в PharmaApp</h1>
+        <p>Управление лекарствами, продажами и поставками в одном месте.</p>
+
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div>
+            <label>Логин</label>
+            <input {...register('username', { required: true })} placeholder="Введите логин" />
+          </div>
+          <div>
+            <label>Пароль</label>
+            <input type="password" {...register('password', { required: true })} placeholder="Введите пароль" />
+          </div>
+          {error && <p className="error-msg">{error}</p>}
+          <button type="submit">Войти</button>
+        </form>
+
+        <p>
+          <a href={OAUTH_URL}>Войти через Google</a>
+        </p>
+      </div>
     </div>
   )
 }

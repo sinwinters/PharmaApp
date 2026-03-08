@@ -46,7 +46,7 @@ class DrugServiceTest {
 
     @Test
     void create_throwsWhenCategoryNotFound() {
-        DrugCreateUpdate dto = new DrugCreateUpdate("Drug", 1L, 1L, 10, "шт", BigDecimal.TEN);
+        DrugCreateUpdate dto = new DrugCreateUpdate("Drug", 1L, 1L, 10, "шт", BigDecimal.TEN, false, null);
         when(categoryRepository.findById(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> drugService.create(dto))
@@ -65,7 +65,7 @@ class DrugServiceTest {
         when(drugRepository.findByIdWithAssociations(10L)).thenReturn(Optional.of(savedDrug));
         when(stockRepository.findByDrugId(10L)).thenReturn(Optional.of(Stock.builder().quantity(0).build()));
 
-        DrugCreateUpdate dto = new DrugCreateUpdate("D", 1L, 1L, 5, "шт", BigDecimal.ONE);
+        DrugCreateUpdate dto = new DrugCreateUpdate("D", 1L, 1L, 5, "шт", BigDecimal.ONE, false, null);
         drugService.create(dto);
 
         ArgumentCaptor<Drug> drugCaptor = ArgumentCaptor.forClass(Drug.class);

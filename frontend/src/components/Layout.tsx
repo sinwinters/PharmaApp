@@ -1,5 +1,13 @@
-import { Outlet, Link, useNavigate } from 'react-router-dom'
+import { Outlet, NavLink, useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
+
+const menu = [
+  { to: '/drugs', label: 'Лекарства' },
+  { to: '/sales', label: 'Продажи' },
+  { to: '/orders', label: 'Заказы' },
+  { to: '/categories', label: 'Категории' },
+  { to: '/suppliers', label: 'Поставщики' },
+]
 
 export default function Layout() {
   const logout = useAuthStore((s) => s.logout)
@@ -11,19 +19,21 @@ export default function Layout() {
   }
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <nav style={{ width: 220, background: '#1a1a2e', color: '#eee', padding: 16 }}>
-        <h2 style={{ margin: '0 0 24px 0', fontSize: 18 }}>Аптека</h2>
-        <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-          <li style={{ marginBottom: 8 }}><Link to="/drugs" style={{ color: '#eee' }}>Лекарства</Link></li>
-          <li style={{ marginBottom: 8 }}><Link to="/sales" style={{ color: '#eee' }}>Продажи</Link></li>
-          <li style={{ marginBottom: 8 }}><Link to="/orders" style={{ color: '#eee' }}>Заказы</Link></li>
-          <li style={{ marginBottom: 8 }}><Link to="/categories" style={{ color: '#eee' }}>Категории</Link></li>
-          <li style={{ marginBottom: 8 }}><Link to="/suppliers" style={{ color: '#eee' }}>Поставщики</Link></li>
+    <div className="app-shell">
+      <nav className="sidebar">
+        <h2>PharmaApp</h2>
+        <ul>
+          {menu.map((item) => (
+            <li key={item.to}>
+              <NavLink to={item.to} className={({ isActive }) => (isActive ? 'active' : '')}>
+                {item.label}
+              </NavLink>
+            </li>
+          ))}
         </ul>
-        <button onClick={handleLogout} style={{ marginTop: 24, padding: '8px 16px', cursor: 'pointer' }}>Выход</button>
+        <button onClick={handleLogout}>Выход</button>
       </nav>
-      <main style={{ flex: 1, padding: 24, overflow: 'auto' }}>
+      <main className="content">
         <Outlet />
       </main>
     </div>
