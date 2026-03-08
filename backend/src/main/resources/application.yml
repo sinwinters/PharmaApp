@@ -29,8 +29,8 @@ spring:
       client:
         registration:
           google:
-            client-id: YOUR_GOOGLE_CLIENT_ID
-            client-secret: YOUR_GOOGLE_CLIENT_SECRET
+            client-id: ${GOOGLE_CLIENT_ID:}
+            client-secret: ${GOOGLE_CLIENT_SECRET:}
             scope:
               - openid
               - profile
@@ -46,3 +46,9 @@ spring:
 server:
   servlet:
     context-path: /api/v1
+
+app:
+  frontend:
+    url: ${APP_FRONTEND_URL:http://localhost:5173}
+  auto-order:
+    default-gln: 4819999999999

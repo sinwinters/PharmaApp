@@ -41,6 +41,13 @@ public class Drug {
     @Column(name = "base_price", nullable = false, precision = 12, scale = 2)
     private BigDecimal basePrice;
 
+    @Column(name = "requires_eds_signature", nullable = false)
+    @Builder.Default
+    private Boolean requiresEdsSignature = false;
+
+    @Column(name = "eds_control_type", length = 30)
+    private String edsControlType;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
