@@ -34,7 +34,7 @@ class AuthServiceTest {
     private AuthService authService;
 
     @Test
-    void login_throwsWhenUserNotFound() {
+    void loginThrowsWhenUserNotFound() {
         when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.login(new LoginRequest("unknown", "pass")))
@@ -43,7 +43,7 @@ class AuthServiceTest {
     }
 
     @Test
-    void login_throwsWhenPasswordInvalid() {
+    void loginThrowsWhenPasswordInvalid() {
         Role role = new Role(1L, "ADMIN", null);
         User user = User.builder()
                 .id(1L)
