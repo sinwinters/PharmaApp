@@ -15,6 +15,7 @@ import com.pharma.domain.repository.SaleRepository;
 import com.pharma.domain.repository.StockRepository;
 import com.pharma.domain.repository.UserRepository;
 import com.pharma.domain.strategy.PricingStrategy;
+import com.pharma.infrastructure.integration.AvestEdsGateway;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -43,6 +45,10 @@ class SaleServiceTest {
     private PricingStrategy pricingStrategy;
     @Mock
     private LowStockNotifier lowStockNotifier;
+    @Mock
+    private BenefitPolicyService benefitPolicyService;
+    @Mock
+    private AvestEdsGateway avestEdsGateway;
 
     @InjectMocks
     private SaleService saleService;
@@ -59,7 +65,9 @@ class SaleServiceTest {
         when(drugRepository.findByIdWithAssociations(1L)).thenReturn(Optional.of(drug));
         when(stockRepository.findByDrugId(1L)).thenReturn(Optional.of(stock));
 
-        SaleCreateRequest request = new SaleCreateRequest(List.of(new SaleItemRequest(1L, 5)));
+        when(benefitPolicyService.resolveProgram(any())).thenReturn(Optional.empty());
+
+        SaleCreateRequest request = new SaleCreateRequest(List.of(new SaleItemRequest(1L, 5)), null, null, null, null);
 
         assertThatThrownBy(() -> saleService.createSale(request, "u"))
                 .isInstanceOf(InsufficientStockException.class)
