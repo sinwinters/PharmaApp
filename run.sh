@@ -52,10 +52,24 @@ fi
 # Gradle / gradlew
 GRADLE_CMD=""
 if [ -f "backend/gradlew" ]; then
-  GRADLE_CMD="./gradlew"
-elif command -v gradle &>/dev/null; then
+  chmod +x backend/gradlew 2>/dev/null || true
+  if [ -x "backend/gradlew" ]; then
+    GRADLE_CMD="./gradlew"
+  fi
+fi
+
+if [ -z "$GRADLE_CMD" ] && [ -x "gradle-8.10/bin/gradle" ]; then
+  GRADLE_CMD="../gradle-8.10/bin/gradle"
+elif [ -z "$GRADLE_CMD" ] && [ -f "gradle-8.10/bin/gradle" ]; then
+  chmod +x gradle-8.10/bin/gradle 2>/dev/null || true
+  [ -x "gradle-8.10/bin/gradle" ] && GRADLE_CMD="../gradle-8.10/bin/gradle"
+fi
+
+if [ -z "$GRADLE_CMD" ] && command -v gradle &>/dev/null; then
   GRADLE_CMD="gradle"
-else
+fi
+
+if [ -z "$GRADLE_CMD" ]; then
   MISSING+=("Gradle не найден. В каталоге backend выполните: gradle wrapper --gradle-version 8.10 (если установлен Gradle).")
 fi
 
