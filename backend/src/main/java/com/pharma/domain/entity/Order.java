@@ -38,6 +38,19 @@ public class Order {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Column(name = "destination_gln", length = 13)
+    private String destinationGln;
+
+    @Column(name = "invoice_number", length = 64)
+    private String invoiceNumber;
+
+    @Column(name = "invoice_generated_at")
+    private Instant invoiceGeneratedAt;
+
+    @Column(name = "auto_order", nullable = false)
+    @Builder.Default
+    private Boolean autoOrder = false;
+
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<OrderItem> items = new ArrayList<>();
