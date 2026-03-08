@@ -22,7 +22,7 @@ public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
     private final OAuth2SuccessHandler oauth2SuccessHandler;
-    private final CustomUserDetailsService userDetailsService;
+    private final AppUserDetailsService userDetailsService;
 
     private static final String[] PUBLIC = {
             "/auth/login",
