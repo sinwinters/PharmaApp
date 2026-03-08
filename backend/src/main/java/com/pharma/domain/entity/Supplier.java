@@ -24,4 +24,7 @@ public class Supplier {
 
     private String email;
     private String phone;
+
+    @Column(name = "warehouse_gln", length = 13)
+    private String warehouseGln;
 }
