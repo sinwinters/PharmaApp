@@ -2,6 +2,9 @@ package com.pharma.infrastructure.web;
 
 import com.pharma.application.dto.TokenResponse;
 import com.pharma.application.service.AuthService;
+import com.pharma.infrastructure.security.AppUserDetailsService;
+import com.pharma.infrastructure.security.JwtAuthFilter;
+import com.pharma.infrastructure.security.OAuth2SuccessHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -23,9 +26,15 @@ class AuthControllerIntegrationTest {
 
     @MockBean
     private AuthService authService;
+    @MockBean
+    private JwtAuthFilter jwtAuthFilter;
+    @MockBean
+    private OAuth2SuccessHandler oauth2SuccessHandler;
+    @MockBean
+    private AppUserDetailsService appUserDetailsService;
 
     @Test
-    void login_withValidCredentials_returns200() throws Exception {
+    void loginWithValidCredentialsReturns200() throws Exception {
         when(authService.login(any())).thenReturn(new TokenResponse("access", "refresh", 3600L));
 
         mockMvc.perform(post("/auth/login")
@@ -35,7 +44,7 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
-    void login_withInvalidCredentials_returns400() throws Exception {
+    void loginWithInvalidCredentialsReturns400() throws Exception {
         when(authService.login(any())).thenThrow(new com.pharma.application.exception.PharmaException("Неверный логин или пароль"));
 
         mockMvc.perform(post("/auth/login")
