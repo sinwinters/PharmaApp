@@ -1,6 +1,10 @@
 -- Демо-данные для тестирования (опционально, можно отключить в prod)
 INSERT INTO users (username, password_hash, email, role_id)
-SELECT 'admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'admin@pharma.local', id FROM roles WHERE name = 'ADMIN' LIMIT 1;
+SELECT 'admin', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', 'admin@pharma.local', id
+FROM roles
+WHERE name = 'ADMIN'
+  AND NOT EXISTS (SELECT 1 FROM users u WHERE u.username = 'admin')
+LIMIT 1;
 
 INSERT INTO categories (name, description) VALUES
 ('Обезболивающие', 'Анальгетики и НПВП'),
