@@ -6,7 +6,6 @@ import com.pharma.application.exception.PharmaException;
 import com.pharma.domain.repository.UserRepository;
 import com.pharma.infrastructure.security.JwtService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -16,12 +15,22 @@ import java.util.Optional;
 public class AuthService {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    private final org.springframework.security.authentication.AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
     public TokenResponse login(LoginRequest request) {
+        try {
+            authenticationManager.authenticate(
+                    new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                            request.username(),
+                            request.password()
+                    )
+            );
+        } catch (org.springframework.security.core.AuthenticationException ex) {
+            throw new PharmaException("Неверный логин или пароль");
+        }
+
         return userRepository.findByUsername(request.username())
-                .filter(u -> passwordEncoder.matches(request.password(), u.getPasswordHash()))
                 .map(u -> {
                     String access = jwtService.createAccessToken(u.getUsername(), u.getRole().getName());
                     String refresh = jwtService.createRefreshToken(u.getUsername());
