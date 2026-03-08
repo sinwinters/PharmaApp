@@ -2,6 +2,7 @@ package com.pharma.application.service;
 
 import com.pharma.application.dto.OrderCreateRequest;
 import com.pharma.application.dto.OrderDto;
+import com.pharma.application.dto.OrderInvoiceDto;
 import com.pharma.application.dto.OrderItemDto;
 import com.pharma.application.exception.ResourceNotFoundException;
 import com.pharma.application.port.OrderBuilder;
@@ -15,6 +16,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 @Service
@@ -60,6 +62,13 @@ public class OrderService {
         return toDto(order);
     }
 
+    @Transactional(readOnly = true)
+    public Optional<OrderInvoiceDto> findInvoiceByOrderId(Long id) {
+        return orderRepository.findWithItemsById(id)
+                .filter(o -> o.getInvoiceNumber() != null && o.getInvoiceGeneratedAt() != null)
+                .map(this::toInvoiceDto);
+    }
+
     private OrderDto toDto(Order o) {
         var items = o.getItems().stream()
                 .map(i -> new OrderItemDto(
@@ -77,6 +86,35 @@ public class OrderService {
                 o.getStatus(),
                 o.getCreatedBy() != null ? o.getCreatedBy().getId() : null,
                 o.getCreatedAt(),
+                o.getDestinationGln(),
+                o.getInvoiceNumber(),
+                o.getInvoiceGeneratedAt(),
+                o.getAutoOrder(),
+                items
+        );
+    }
+
+    private OrderInvoiceDto toInvoiceDto(Order o) {
+        var items = o.getItems().stream()
+                .map(i -> new OrderItemDto(
+                        i.getId(),
+                        i.getDrug().getId(),
+                        i.getDrug().getName(),
+                        i.getQuantity(),
+                        i.getUnitPrice()
+                ))
+                .toList();
+
+        BigDecimal total = items.stream()
+                .map(i -> i.unitPrice().multiply(BigDecimal.valueOf(i.quantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        return new OrderInvoiceDto(
+                o.getId(),
+                o.getInvoiceNumber(),
+                o.getInvoiceGeneratedAt(),
+                o.getDestinationGln(),
+                total,
                 items
         );
     }

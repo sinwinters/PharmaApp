@@ -31,9 +31,8 @@ class AuthIntegrationTestcontainersTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void login_withDemoUser_returnsTokens() throws Exception {
-        mockMvc.perform(post("/auth/login")
-                        .contextPath("/api/v1")
+    void loginWithDemoUserReturnsTokens() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"admin\",\"password\":\"password\"}"))
                 .andExpect(status().isOk())
@@ -42,9 +41,8 @@ class AuthIntegrationTestcontainersTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void login_withWrongPassword_returnsBadRequest() throws Exception {
-        mockMvc.perform(post("/auth/login")
-                        .contextPath("/api/v1")
+    void loginWithWrongPasswordReturnsBadRequest() throws Exception {
+        mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"username\":\"admin\",\"password\":\"wrong\"}"))
                 .andExpect(status().isBadRequest());
