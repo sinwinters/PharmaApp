@@ -31,6 +31,18 @@ public class Sale {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Column(name = "eds_required", nullable = false)
+    private Boolean edsRequired;
+
+    @Column(name = "eds_validated", nullable = false)
+    private Boolean edsValidated;
+
+    @Column(name = "eds_provider")
+    private String edsProvider;
+
+    @Column(name = "prescription_number")
+    private String prescriptionNumber;
+
     @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<SaleItem> items = new ArrayList<>();

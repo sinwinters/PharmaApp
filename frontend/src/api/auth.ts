@@ -18,4 +18,4 @@ export function login(body: LoginRequest) {
 
 // OAuth через Google
 // Фронт будет проксировать /oauth2 на backend, учитываем baseURL
-export const OAUTH_URL = '/oauth2/authorization/google'
+export const OAUTH_URL = '/api/v1/oauth2/authorization/google'
