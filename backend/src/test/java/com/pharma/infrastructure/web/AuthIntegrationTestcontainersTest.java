@@ -31,7 +31,7 @@ class AuthIntegrationTestcontainersTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void login_withDemoUser_returnsTokens() throws Exception {
+    void loginWithDemoUserReturnsTokens() throws Exception {
         mockMvc.perform(post("/auth/login")
                         .contextPath("/api/v1")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -42,7 +42,7 @@ class AuthIntegrationTestcontainersTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void login_withWrongPassword_returnsBadRequest() throws Exception {
+    void loginWithWrongPasswordReturnsBadRequest() throws Exception {
         mockMvc.perform(post("/auth/login")
                         .contextPath("/api/v1")
                         .contentType(MediaType.APPLICATION_JSON)
