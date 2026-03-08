@@ -89,6 +89,13 @@ APP_FRONTEND_URL=https://your-domain.example docker compose --profile full up -d
 - Frontend: http://localhost  
 - Backend API: http://localhost:8080/api/v1  
 
+### Новые API для аналитики и отчетности
+- `GET /api/v1/analytics/drugs?periodDays=30` — агрегированная аналитика по продажам и остаткам.
+- `GET /api/v1/analytics/reports/minzdrav-rb?periodDays=30` — шаблонный отчет по контрольным требованиям Минздрава РБ.
+- `POST /api/v1/integrations/rb-medical-card/verify` — заглушка интеграции карты медицинского обслуживания РБ.
+- `GET /api/v1/sales/benefits/rb` — справочник льгот и скидок РБ для применения при продаже.
+- `GET /api/v1/orders/{id}/invoice` — накладная для заказа (для автозаказов формируется автоматически).
+
 
 Для входа через Google (OAuth2) передайте переменные окружения:
 
@@ -157,3 +164,23 @@ PharmaApp/
 
 После первого запуска Flyway применяются миграции, включая `V2__demo_data.sql` с тестовыми записями (админ-пользователь, категории, поставщики, лекарства). Для production рекомендуется заменить или отключить этот seed-набор.
  
+
+### Применение льгот при продаже
+В `POST /api/v1/sales` можно передать поле `benefitCode`, например:
+`RB_DISABLED_GROUP_1_2`, `RB_CHILD_UNDER_3`, `RB_CHRONIC_DISEASE`.
+Сервис применит соответствующую скидку по всей продаже и вернет суммы до/после скидки и ссылку на норму права в ответе.
+
+
+### Автозаказ: GLN и накладная
+Для автозаказов система передает GLN фармсклада (из `suppliers.warehouse_gln`, при отсутствии — `app.auto-order.default-gln`)
+и автоматически формирует накладную (`invoiceNumber`, `invoiceGeneratedAt`).
+
+
+### Отпуск антибиотиков и наркосодержащих препаратов с ЭЦП Avest
+Для лекарств с признаком `requiresEdsSignature=true` и типом контроля (`ANTIBIOTIC`/`NARCOTIC`)
+при `POST /api/v1/sales` нужно передать:
+- `prescriptionNumber`
+- `edsSignature`
+- `edsProvider=AVEST`
+
+Проверка подписи выполняется через интеграционный gateway-заглушку Avest.
