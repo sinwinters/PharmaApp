@@ -2,6 +2,7 @@ package com.pharma.infrastructure.web;
 
 import com.pharma.application.dto.OrderCreateRequest;
 import com.pharma.application.dto.OrderDto;
+import com.pharma.application.dto.OrderInvoiceDto;
 import com.pharma.application.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -46,6 +47,15 @@ public class OrderController {
     @Operation(summary = "Получить заказ по ID")
     public ResponseEntity<OrderDto> getById(@PathVariable Long id) {
         return orderService.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{id}/invoice")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PHARMACIST')")
+    @Operation(summary = "Получить автоматически сформированную накладную")
+    public ResponseEntity<OrderInvoiceDto> getInvoice(@PathVariable Long id) {
+        return orderService.findInvoiceByOrderId(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
