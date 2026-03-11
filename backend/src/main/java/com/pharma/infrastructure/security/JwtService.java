@@ -1,6 +1,8 @@
 package com.pharma.infrastructure.security;
 
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -15,9 +17,20 @@ import java.util.Optional;
 public class JwtService {
 
     private final JwtProperties props;
+    private volatile SecretKey cachedKey;
 
     private SecretKey key() {
-        return Keys.hmacShaKeyFor(props.getSecret().getBytes(StandardCharsets.UTF_8));
+        SecretKey local = cachedKey;
+        if (local == null) {
+            synchronized (this) {
+                local = cachedKey;
+                if (local == null) {
+                    local = Keys.hmacShaKeyFor(props.getSecret().getBytes(StandardCharsets.UTF_8));
+                    cachedKey = local;
+                }
+            }
+        }
+        return local;
     }
 
     public String createAccessToken(String username, String role) {
@@ -42,12 +55,21 @@ public class JwtService {
     }
 
     public Optional<String> extractUsername(String token) {
+        return parseClaims(token).map(Claims::getSubject);
+    }
+
+    public Optional<String> extractAccessUsername(String token) {
+        return parseClaims(token)
+                .filter(claims -> "access".equals(claims.get("type", String.class)))
+                .map(Claims::getSubject);
+    }
+
+    private Optional<Claims> parseClaims(String token) {
         try {
             return Optional.of(
                     Jwts.parser().verifyWith(key()).build()
                             .parseSignedClaims(token)
                             .getPayload()
-                            .getSubject()
             );
         } catch (JwtException e) {
             return Optional.empty();

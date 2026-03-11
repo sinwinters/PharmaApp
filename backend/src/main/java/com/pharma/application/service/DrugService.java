@@ -20,7 +20,10 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -33,15 +36,16 @@ public class DrugService {
 
     @Transactional(readOnly = true)
     public Page<DrugDto> findAll(Specification<Drug> spec, Pageable pageable) {
-        return drugRepository.findAll(spec, pageable)
-                .map(this::toDto);
+        Page<Drug> page = drugRepository.findAll(spec, pageable);
+        Map<Long, Integer> stockByDrugId = loadStockMap(page.getContent());
+        return page.map(drug -> toDto(drug, stockByDrugId));
     }
 
     @Transactional(readOnly = true)
     @Cacheable(cacheNames = CacheConfig.CACHE_DRUG, key = "#id")
     public Optional<DrugDto> findById(Long id) {
         return drugRepository.findByIdWithAssociations(id)
-                .map(this::toDto);
+                .map(drug -> toDto(drug, Map.of(drug.getId(), stockRepository.findByDrugId(drug.getId()).map(Stock::getQuantity).orElse(0))));
     }
 
     @Transactional
@@ -58,11 +62,14 @@ public class DrugService {
                 .minQuantity(dto.minQuantity())
                 .unit(dto.unit())
                 .basePrice(dto.basePrice())
+                .requiresEdsSignature(dto.requiresEdsSignature())
+                .edsControlType(dto.edsControlType())
                 .build();
         drug = drugRepository.save(drug);
         Stock stock = Stock.builder().drug(drug).quantity(0).build();
         stockRepository.save(stock);
-        return toDto(drugRepository.findByIdWithAssociations(drug.getId()).orElseThrow());
+        Drug saved = drugRepository.findByIdWithAssociations(drug.getId()).orElseThrow();
+        return toDto(saved, Map.of(saved.getId(), 0));
     }
 
     @Transactional
@@ -80,8 +87,12 @@ public class DrugService {
         drug.setMinQuantity(dto.minQuantity());
         drug.setUnit(dto.unit());
         drug.setBasePrice(dto.basePrice());
+        drug.setRequiresEdsSignature(dto.requiresEdsSignature());
+        drug.setEdsControlType(dto.edsControlType());
         drugRepository.save(drug);
-        return toDto(drugRepository.findByIdWithAssociations(id).orElseThrow());
+        Drug updated = drugRepository.findByIdWithAssociations(id).orElseThrow();
+        int stockQty = stockRepository.findByDrugId(updated.getId()).map(Stock::getQuantity).orElse(0);
+        return toDto(updated, Map.of(updated.getId(), stockQty));
     }
 
     @Transactional
@@ -91,8 +102,15 @@ public class DrugService {
         drugRepository.deleteById(id);
     }
 
-    private DrugDto toDto(Drug d) {
-        int stockQty = stockRepository.findByDrugId(d.getId()).map(Stock::getQuantity).orElse(0);
+    private Map<Long, Integer> loadStockMap(List<Drug> drugs) {
+        if (drugs.isEmpty()) return Map.of();
+        List<Long> ids = drugs.stream().map(Drug::getId).toList();
+        return stockRepository.findAllByDrugIdIn(ids).stream()
+                .collect(Collectors.toMap(s -> s.getDrug().getId(), Stock::getQuantity, (a, b) -> b));
+    }
+
+    private DrugDto toDto(Drug d, Map<Long, Integer> stockByDrugId) {
+        int stockQty = stockByDrugId.getOrDefault(d.getId(), 0);
         return new DrugDto(
                 d.getId(),
                 d.getName(),
@@ -103,7 +121,9 @@ public class DrugService {
                 d.getMinQuantity(),
                 d.getUnit(),
                 d.getBasePrice(),
-                stockQty
+                stockQty,
+                d.getRequiresEdsSignature(),
+                d.getEdsControlType()
         );
     }
 }
