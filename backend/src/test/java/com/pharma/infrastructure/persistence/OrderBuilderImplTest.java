@@ -24,7 +24,7 @@ class OrderBuilderImplTest {
     private DrugRepository drugRepository;
 
     @Test
-    void build_throwsWhenSupplierNotSet() {
+    void buildThrowsWhenSupplierNotSet() {
         OrderBuilderImpl builder = new OrderBuilderImpl(drugRepository);
 
         assertThatThrownBy(builder::build)
@@ -33,7 +33,7 @@ class OrderBuilderImplTest {
     }
 
     @Test
-    void build_throwsWhenDrugNotFound() {
+    void buildThrowsWhenDrugNotFound() {
         Supplier sup = Supplier.builder().id(1L).name("S").build();
         when(drugRepository.findById(999L)).thenReturn(Optional.empty());
 
@@ -46,7 +46,7 @@ class OrderBuilderImplTest {
     }
 
     @Test
-    void build_createsOrderWithItems() {
+    void buildCreatesOrderWithItems() {
         Supplier sup = Supplier.builder().id(1L).name("Supplier").build();
         Category cat = Category.builder().id(1L).name("C").build();
         Drug drug = Drug.builder().id(10L).name("D").category(cat).supplier(sup).basePrice(BigDecimal.valueOf(50)).build();
