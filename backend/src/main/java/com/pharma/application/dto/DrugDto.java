@@ -12,5 +12,7 @@ public record DrugDto(
         Integer minQuantity,
         String unit,
         BigDecimal basePrice,
-        Integer stockQuantity
+        Integer stockQuantity,
+        Boolean requiresEdsSignature,
+        String edsControlType
 ) {}
