@@ -1,16 +1,23 @@
 package com.pharma.infrastructure.web;
 
+import com.pharma.application.dto.AuthRequest;
+import com.pharma.application.dto.AuthResponse;
 import com.pharma.application.dto.LoginRequest;
 import com.pharma.application.dto.RefreshRequest;
 import com.pharma.application.dto.TokenResponse;
+import com.pharma.application.exception.PharmaException;
 import com.pharma.application.service.AuthService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.security.authentication.BadCredentialsException;
 
-import java.util.Optional;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 
 @RestController
 @RequestMapping("/auth")
@@ -21,8 +28,13 @@ public class AuthController {
 
     @PostMapping("/login")
     @Operation(summary = "Вход по логину и паролю")
-    public ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(authService.login(request));
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest request) {
+        try {
+            TokenResponse tokenResponse = authService.login(new LoginRequest(request.username(), request.password()));
+            return ResponseEntity.ok(AuthResponse.fromTokenResponse(tokenResponse));
+        } catch (BadCredentialsException | PharmaException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
     @PostMapping("/refresh")

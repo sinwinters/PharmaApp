@@ -10,4 +10,6 @@ spring:
 
 app:
   frontend:
-    url: http://localhost:5173
+    url: ${APP_FRONTEND_URL:http://localhost}
+  auto-order:
+    default-gln: 4819999999999
