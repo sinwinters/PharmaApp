@@ -81,6 +81,13 @@ jobs:
             backend/build/test-results
             backend/build/reports/checkstyle
             backend/build/reports/spotbugs
+        run: ./gradlew build --no-daemon
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: pharma
+          POSTGRES_USER: pharma
+          POSTGRES_PASSWORD: pharma
 
   frontend:
     name: Frontend (Build)

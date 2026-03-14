@@ -184,3 +184,4 @@ PharmaApp/
 - `edsProvider=AVEST`
 
 Проверка подписи выполняется через интеграционный gateway-заглушку Avest.
+ 

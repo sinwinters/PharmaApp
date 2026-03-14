@@ -20,6 +20,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final OAuth2SuccessHandler oauth2SuccessHandler;
     private final AppUserDetailsService userDetailsService;
 
     private static final String[] PUBLIC = {
