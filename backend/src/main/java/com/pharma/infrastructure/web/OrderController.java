@@ -2,6 +2,7 @@ package com.pharma.infrastructure.web;
 
 import com.pharma.application.dto.OrderCreateRequest;
 import com.pharma.application.dto.OrderDto;
+import com.pharma.application.dto.OrderInvoiceDto;
 import com.pharma.application.service.OrderService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
@@ -14,7 +15,13 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Map;
 
@@ -46,6 +53,15 @@ public class OrderController {
     @Operation(summary = "Получить заказ по ID")
     public ResponseEntity<OrderDto> getById(@PathVariable Long id) {
         return orderService.findById(id)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/{id}/invoice")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PHARMACIST')")
+    @Operation(summary = "Получить автоматически сформированную накладную")
+    public ResponseEntity<OrderInvoiceDto> getInvoice(@PathVariable Long id) {
+        return orderService.findInvoiceByOrderId(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }

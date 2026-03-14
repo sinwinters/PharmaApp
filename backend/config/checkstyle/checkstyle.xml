@@ -15,9 +15,9 @@
         </module>
         <module name="TypeName"/>
         <module name="AvoidStarImport"/>
-        <module name="LineLength">
-            <property name="max" value="140"/>
-            <property name="ignorePattern" value="^import.*|^ *\* *|^ *//.*"/>
-        </module>
+    </module>
+    <module name="LineLength">
+        <property name="max" value="140"/>
+        <property name="ignorePattern" value="^import.*|^ *\* *|^ *//.*"/>
     </module>
 </module>
