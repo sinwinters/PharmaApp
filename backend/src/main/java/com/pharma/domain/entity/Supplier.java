@@ -1,7 +1,16 @@
 package com.pharma.domain.entity;
 
-import jakarta.persistence.*;
-import lombok.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Entity
 @Table(name = "suppliers")
@@ -24,4 +33,7 @@ public class Supplier {
 
     private String email;
     private String phone;
+
+    @Column(name = "warehouse_gln", length = 13)
+    private String warehouseGln;
 }

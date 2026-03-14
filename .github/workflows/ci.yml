@@ -2,9 +2,17 @@ name: CI
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   backend:
@@ -14,26 +22,65 @@ jobs:
       run:
         working-directory: backend
 
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: pharma
+          POSTGRES_USER: pharma
+          POSTGRES_PASSWORD: pharma
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pharma -d pharma"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      SPRING_PROFILES_ACTIVE: test
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: pharma
+      POSTGRES_USER: pharma
+      POSTGRES_PASSWORD: pharma
+      APP_FRONTEND_URL: http://localhost:5173
+      GOOGLE_CLIENT_ID: test-client
+      GOOGLE_CLIENT_SECRET: test-secret
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@v4
 
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
+          distribution: temurin
           java-version: '21'
-          distribution: 'temurin'
+          cache: gradle
 
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
+      - name: Make Gradle wrapper executable
+        run: chmod +x gradlew
+
       - name: Build and run tests
-        run: gradle build --no-daemon
-        env:
-          POSTGRES_HOST: localhost
-          POSTGRES_PORT: 5432
-          POSTGRES_DB: pharma
-          POSTGRES_USER: pharma
-          POSTGRES_PASSWORD: pharma
+        run: ./gradlew clean build --no-daemon --stacktrace
+
+      - name: Upload backend test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-reports
+          path: |
+            backend/build/reports/tests
+            backend/build/test-results
+            backend/build/reports/checkstyle
+            backend/build/reports/spotbugs
 
   frontend:
     name: Frontend (Build)
@@ -43,16 +90,20 @@ jobs:
         working-directory: frontend
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
-      - name: Install and build
-        run: |
-          npm install
-          npm run build
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build frontend
+        run: npm run build
         env:
-          CI: false
+          CI: true
