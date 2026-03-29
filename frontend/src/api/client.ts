@@ -3,14 +3,28 @@ import { useAuthStore } from '../store/authStore'
 
 const baseURL = import.meta.env.VITE_API_URL || '/api/v1'
 
+function readAccessTokenFromStorage() {
+  try {
+    const raw = localStorage.getItem('pharma-auth')
+    if (!raw) return null
+    const parsed = JSON.parse(raw) as { state?: { accessToken?: string | null } }
+    return parsed.state?.accessToken ?? null
+  } catch {
+    return null
+  }
+}
+
 export const api = axios.create({
   baseURL,
   headers: { 'Content-Type': 'application/json' },
 })
 
 api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().accessToken
-  if (token) config.headers.Authorization = `Bearer ${token}`
+  const token = useAuthStore.getState().accessToken ?? readAccessTokenFromStorage()
+  if (token) {
+    config.headers = config.headers ?? {}
+    config.headers.Authorization = `Bearer ${token}`
+  }
   return config
 })
 

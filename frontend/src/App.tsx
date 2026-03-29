@@ -10,7 +10,9 @@ import Suppliers from './pages/Suppliers'
 import OAuthCallback from './pages/OAuthCallback'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const hasHydrated = useAuthStore((s) => s.hasHydrated)
   const token = useAuthStore((s) => s.accessToken)
+  if (!hasHydrated) return null
   if (!token) return <Navigate to="/login" replace />
   return <>{children}</>
 }
