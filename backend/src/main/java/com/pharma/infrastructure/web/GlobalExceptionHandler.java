@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+public class GlobalExceptionHandler { 
 
     @ExceptionHandler(ResourceNotFoundException.class)
     public ResponseEntity<Map<String, String>> handleNotFound(ResourceNotFoundException e) {
@@ -39,11 +39,11 @@ public class GlobalExceptionHandler {
                 .body(Map.of("error", "Конфликт данных. Проверьте уникальные поля и связи."));
     }
 
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleUnexpected(Exception e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("error", "Внутренняя ошибка сервера"));
-    }
+  // @ExceptionHandler(Exception.class)
+// public ResponseEntity<Map<String, String>> handleUnexpected(Exception e) {
+//     return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+//             .body(Map.of("error", "Внутренняя ошибка сервера"));
+// }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException e) {

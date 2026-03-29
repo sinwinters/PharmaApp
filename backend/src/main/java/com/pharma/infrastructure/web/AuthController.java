@@ -1,47 +1,66 @@
 package com.pharma.infrastructure.web;
 
-import com.pharma.application.dto.AuthRequest;
-import com.pharma.application.dto.AuthResponse;
-import com.pharma.application.dto.LoginRequest;
-import com.pharma.application.dto.RefreshRequest;
-import com.pharma.application.dto.TokenResponse;
-import com.pharma.application.exception.PharmaException;
-import com.pharma.application.service.AuthService;
-import io.swagger.v3.oas.annotations.Operation;
-import jakarta.validation.Valid;
+import com.pharma.application.dto.UserDto;
+import com.pharma.domain.repository.UserRepository;
+import com.pharma.infrastructure.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.BadCredentialsException;
-
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 
 @RestController
 @RequestMapping("/auth")
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthService authService;
+    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
+    private final UserRepository userRepository;
 
     @PostMapping("/login")
-    @Operation(summary = "Вход по логину и паролю")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody AuthRequest request) {
+    public ResponseEntity<?> login(@RequestBody AuthRequest request) {
         try {
-            TokenResponse tokenResponse = authService.login(new LoginRequest(request.username(), request.password()));
-            return ResponseEntity.ok(AuthResponse.fromTokenResponse(tokenResponse));
-        } catch (BadCredentialsException | PharmaException e) {
-            return ResponseEntity.badRequest().build();
+            Authentication auth = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.username(), request.password())
+            );
+
+            String accessToken = jwtService.createAccessToken(auth.getName(),
+                    auth.getAuthorities().iterator().next().getAuthority());
+            String refreshToken = jwtService.createRefreshToken(auth.getName());
+
+            return ResponseEntity.ok(new TokensResponse(accessToken, refreshToken));
+
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(401).body("Неверный логин или пароль");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Ошибка: " + e.getMessage());
         }
     }
 
-    @PostMapping("/refresh")
-    @Operation(summary = "Обновление access token по refresh token")
-    public ResponseEntity<TokenResponse> refresh(@Valid @RequestBody RefreshRequest request) {
-        return authService.refresh(request.refreshToken())
+    @GetMapping("/me")
+    public ResponseEntity<UserDto> currentUser(@AuthenticationPrincipal UserDetails principal) {
+        return userRepository.findByUsername(principal.getUsername())
+                .map(u -> new UserDto(
+                        u.getId(),
+                        u.getUsername(),
+                        u.getEmail(),
+                        u.getRole().getName(),
+                        u.getEnabled()
+                ))
                 .map(ResponseEntity::ok)
-                .orElse(ResponseEntity.status(401).build());
+                .orElse(ResponseEntity.notFound().build());
     }
+
+    public record AuthRequest(String username, String password) {}
+    public record TokensResponse(String accessToken, String refreshToken) {}
 }

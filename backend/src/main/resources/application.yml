@@ -29,12 +29,9 @@ spring:
       client:
         registration:
           google:
-            client-id: ${GOOGLE_CLIENT_ID:}
-            client-secret: ${GOOGLE_CLIENT_SECRET:}
-            scope:
-              - openid
-              - profile
-              - email
+            client-id: your-client-id
+            client-secret: your-client-secret
+            scope: openid, profile, email
             redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
         provider:
           google:
@@ -52,3 +49,8 @@ app:
     url: ${APP_FRONTEND_URL:http://localhost:5173}
   auto-order:
     default-gln: 4819999999999
+
+  jwt:
+    secret: my-super-secret-key-which-is-long-enough-123456
+    access-ttl: 3600000
+    refresh-ttl: 86400000
