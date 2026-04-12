@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -50,11 +52,18 @@ protected void doFilterInternal(HttpServletRequest request,
     // 🔹 если пользователь ещё не установлен — устанавливаем
     if (SecurityContextHolder.getContext().getAuthentication() == null) {
         var userDetails = userDetailsService.loadUserByUsername(username.get());
+        List<SimpleGrantedAuthority> authorities = jwtService.extractAccessRole(token)
+                .map(RoleAuthorityUtils::toAuthority)
+                .map(SimpleGrantedAuthority::new)
+                .map(List::of)
+                .orElseGet(() -> userDetails.getAuthorities().stream()
+                        .map(a -> new SimpleGrantedAuthority(a.getAuthority()))
+                        .toList());
 
         var auth = new UsernamePasswordAuthenticationToken(
                 userDetails,
                 null,
-                userDetails.getAuthorities()
+                authorities
         );
 
         auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

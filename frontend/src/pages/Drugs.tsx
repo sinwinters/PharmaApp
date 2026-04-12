@@ -1,8 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { drugsApi, createDrug, updateDrug, deleteDrug, type DrugDto, type DrugCreateUpdate } from '../api/drugs'
 import { categoriesList } from '../api/categories'
 import { suppliersList } from '../api/suppliers'
+import { getApiErrorMessage } from '../api/client'
+import Spinner from '../components/Spinner'
+import EmptyState from '../components/EmptyState'
+import { useToastStore } from '../store/toastStore'
 
 export default function Drugs() {
   const [page, setPage] = useState(0)
@@ -11,9 +15,15 @@ export default function Drugs() {
   const [supplierId, setSupplierId] = useState<number | ''>('')
   const [editing, setEditing] = useState<DrugDto | null>(null)
   const [form, setForm] = useState<DrugCreateUpdate | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const queryClient = useQueryClient()
+  const pushToast = useToastStore((s) => s.push)
 
-  const { data, isLoading } = useQuery({
+  useEffect(() => {
+    setPage(0)
+  }, [name, categoryId, supplierId])
+
+  const { data, isLoading, isError, error, isFetching } = useQuery({
     queryKey: ['drugs', page, name, categoryId, supplierId],
     queryFn: () => drugsApi({ page, size: 10, name: name || undefined, categoryId: categoryId !== '' ? categoryId : undefined, supplierId: supplierId !== '' ? supplierId : undefined, }),
   })
@@ -21,9 +31,35 @@ export default function Drugs() {
   const { data: categories } = useQuery({ queryKey: ['categories'], queryFn: () => categoriesList(0, 200) })
   const { data: suppliers } = useQuery({ queryKey: ['suppliers'], queryFn: () => suppliersList(0, 200) })
 
-  const createMu = useMutation({ mutationFn: createDrug, onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['drugs'] }); setForm(null) } })
-  const updateMu = useMutation({ mutationFn: ({ id, body }: { id: number; body: DrugCreateUpdate }) => updateDrug(id, body), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['drugs'] }); setEditing(null) } })
-  const deleteMu = useMutation({ mutationFn: deleteDrug, onSuccess: () => queryClient.invalidateQueries({ queryKey: ['drugs'] }) })
+  const createMu = useMutation({
+    mutationFn: createDrug,
+    onSuccess: () => {
+      setActionError(null)
+      queryClient.invalidateQueries({ queryKey: ['drugs'] })
+      setForm(null)
+      pushToast('Drug successfully added 💊')
+    },
+    onError: (e) => setActionError(getApiErrorMessage(e, 'Не удалось создать лекарство.')),
+  })
+  const updateMu = useMutation({
+    mutationFn: ({ id, body }: { id: number; body: DrugCreateUpdate }) => updateDrug(id, body),
+    onSuccess: () => {
+      setActionError(null)
+      queryClient.invalidateQueries({ queryKey: ['drugs'] })
+      setEditing(null)
+      pushToast('Drug updated successfully 💊')
+    },
+    onError: (e) => setActionError(getApiErrorMessage(e, 'Не удалось обновить лекарство.')),
+  })
+  const deleteMu = useMutation({
+    mutationFn: deleteDrug,
+    onSuccess: () => {
+      setActionError(null)
+      queryClient.invalidateQueries({ queryKey: ['drugs'] })
+      pushToast('Drug deleted successfully 🗑️')
+    },
+    onError: (e) => setActionError(getApiErrorMessage(e, 'Не удалось удалить лекарство.')),
+  })
 
   const openCreate = () => setForm({ name: '', categoryId: 0, supplierId: 0, minQuantity: 10, unit: 'шт', basePrice: 0 })
   const openEdit = (d: DrugDto) => {
@@ -33,7 +69,7 @@ export default function Drugs() {
 
   return (
     <div>
-      <h1>Лекарства</h1>
+      <h1 className="page-header">Лекарства</h1>
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <input placeholder="Поиск по названию" value={name} onChange={(e) => setName(e.target.value)} style={{ padding: 8 }} />
         <select value={categoryId} onChange={(e) => setCategoryId(e.target.value === '' ? '' : Number(e.target.value))} style={{ padding: 8 }}>
@@ -46,6 +82,9 @@ export default function Drugs() {
         </select>
         <button onClick={openCreate} style={{ padding: '8px 16px' }}>Добавить</button>
       </div>
+
+      {actionError && <p style={{ color: '#b42318' }}>{actionError}</p>}
+      {isFetching && !isLoading && <p>Обновляем список...</p>}
 
       {form && (
         <div style={{ background: '#fff', padding: 16, marginBottom: 16, borderRadius: 8 }}>
@@ -71,9 +110,9 @@ export default function Drugs() {
         </div>
       )}
 
-      {isLoading ? <p>Загрузка...</p> : (
+      {isLoading ? <Spinner label="Загружаем лекарства..." /> : isError ? <p style={{ color: '#b42318' }}>{getApiErrorMessage(error, 'Не удалось загрузить список лекарств.')}</p> : (
         <>
-          <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
+          {data && data.content.length === 0 ? <EmptyState icon="🧴" message="No drugs found in inventory 🧴" action={<button className="btn" onClick={openCreate}>Добавить лекарство</button>} /> : <div className="table-wrap"><table className="table">
             <thead>
               <tr style={{ borderBottom: '2px solid #eee' }}>
                 <th style={{ textAlign: 'left', padding: 12 }}>Название</th>
@@ -101,7 +140,7 @@ export default function Drugs() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table></div>}
           {data && data.totalPages > 1 && (
             <div style={{ marginTop: 16 }}>
               <button disabled={page === 0} onClick={() => setPage((p) => p - 1)}>Назад</button>

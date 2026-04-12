@@ -21,6 +21,8 @@ public interface SaleRepository extends JpaRepository<Sale, Long> {
     @EntityGraph(attributePaths = {"user", "items", "items.drug"})
     Optional<Sale> findWithItemsById(Long id);
 
+    long countByItemsDrugId(Long drugId);
+
     long countByCreatedAtBetween(Instant from, Instant to);
 
     @Query("""

@@ -8,6 +8,10 @@ import Orders from './pages/Orders'
 import Categories from './pages/Categories'
 import Suppliers from './pages/Suppliers'
 import OAuthCallback from './pages/OAuthCallback'
+import Reports from './pages/Reports'
+import NotFound from './pages/NotFound'
+import Forbidden from './pages/Forbidden'
+import ServerError from './pages/ServerError'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const hasHydrated = useAuthStore((s) => s.hasHydrated)
@@ -23,6 +27,8 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
         <Route path="/oauth-callback" element={<OAuthCallback />} />
+        <Route path="/forbidden" element={<Forbidden />} />
+        <Route path="/server-error" element={<ServerError />} />
         <Route
           path="/"
           element={
@@ -37,8 +43,9 @@ export default function App() {
           <Route path="orders" element={<Orders />} />
           <Route path="categories" element={<Categories />} />
           <Route path="suppliers" element={<Suppliers />} />
+          <Route path="reports" element={<Reports />} />
         </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
   )

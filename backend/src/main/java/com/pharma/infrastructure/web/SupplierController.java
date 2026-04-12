@@ -39,21 +39,21 @@ public class SupplierController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PHARMACIST')")
     @Operation(summary = "Создать поставщика")
     public ResponseEntity<SupplierDto> create(@Valid @RequestBody SupplierDto dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(supplierService.create(dto));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PHARMACIST')")
     @Operation(summary = "Обновить поставщика")
     public ResponseEntity<SupplierDto> update(@PathVariable Long id, @Valid @RequestBody SupplierDto dto) {
         return ResponseEntity.ok(supplierService.update(id, dto));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PHARMACIST')")
     @Operation(summary = "Удалить поставщика")
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         supplierService.delete(id);

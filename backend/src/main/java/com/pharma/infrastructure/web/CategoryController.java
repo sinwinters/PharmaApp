@@ -21,7 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/categories/")
+@RequestMapping("/categories")
 @RequiredArgsConstructor
 public class CategoryController {
 

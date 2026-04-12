@@ -70,6 +70,14 @@ public class JwtService {
                 .map(Claims::getSubject);
     }
 
+    public Optional<String> extractAccessRole(String token) {
+        return parseClaims(token)
+                .filter(claims -> "access".equals(claims.get("type", String.class)))
+                .map(claims -> claims.get("role", String.class))
+                .map(RoleAuthorityUtils::normalizeRoleName)
+                .filter(role -> !role.isBlank());
+    }
+
     // Разбор токена
     private Optional<Claims> parseClaims(String token) {
         try {

@@ -1,23 +1,30 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { suppliersList } from '../api/suppliers'
+import { getApiErrorMessage } from '../api/client'
+import Spinner from '../components/Spinner'
+import EmptyState from '../components/EmptyState'
 
 export default function Suppliers() {
   const [page, setPage] = useState(0)
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, isFetching } = useQuery({
     queryKey: ['suppliers-page', page],
     queryFn: () => suppliersList(page, 10),
   })
 
   return (
     <div>
-      <h1>Поставщики</h1>
-      {isLoading ? <p>Загрузка...</p> : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
+      <h1 className="page-header">Поставщики</h1>
+      {isFetching && !isLoading && <p>Обновляем список...</p>}
+      {isLoading ? <Spinner label="Загружаем поставщиков..." /> : isError ? <p style={{ color: '#b42318' }}>{getApiErrorMessage(error, 'Не удалось загрузить поставщиков.')}</p> : data?.content.length === 0 ? <EmptyState icon="🚚" message="No suppliers added yet 🚚" /> : (
+        <div className="table-wrap"><table className="table">
           <thead>
             <tr style={{ borderBottom: '2px solid #eee' }}>
               <th style={{ textAlign: 'left', padding: 12 }}>ID</th>
               <th style={{ textAlign: 'left', padding: 12 }}>Название</th>
+              <th style={{ textAlign: 'left', padding: 12 }}>УНП</th>
+              <th style={{ textAlign: 'left', padding: 12 }}>GLN</th>
+              <th style={{ textAlign: 'left', padding: 12 }}>Адрес</th>
               <th style={{ textAlign: 'left', padding: 12 }}>Контакты</th>
               <th style={{ textAlign: 'left', padding: 12 }}>Email</th>
             </tr>
@@ -27,12 +34,15 @@ export default function Suppliers() {
               <tr key={s.id} style={{ borderBottom: '1px solid #eee' }}>
                 <td style={{ padding: 12 }}>{s.id}</td>
                 <td style={{ padding: 12 }}>{s.name}</td>
+                <td style={{ padding: 12 }}>{s.unp ?? '—'}</td>
+                <td style={{ padding: 12 }}>{s.gln ?? '—'}</td>
+                <td style={{ padding: 12 }}>{s.address ?? '—'}</td>
                 <td style={{ padding: 12 }}>{s.contactInfo ?? '—'}</td>
                 <td style={{ padding: 12 }}>{s.email ?? '—'}</td>
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       )}
       {data && data.totalPages > 1 && (
         <div style={{ marginTop: 16 }}>
