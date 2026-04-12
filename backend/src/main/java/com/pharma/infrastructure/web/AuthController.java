@@ -3,6 +3,7 @@ package com.pharma.infrastructure.web;
 import com.pharma.application.dto.UserDto;
 import com.pharma.domain.repository.UserRepository;
 import com.pharma.infrastructure.security.JwtService;
+import com.pharma.infrastructure.security.RoleAuthorityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -34,7 +35,7 @@ public class AuthController {
             );
 
             String accessToken = jwtService.createAccessToken(auth.getName(),
-                    auth.getAuthorities().iterator().next().getAuthority());
+                    RoleAuthorityUtils.normalizeRoleName(auth.getAuthorities().iterator().next().getAuthority()));
             String refreshToken = jwtService.createRefreshToken(auth.getName());
 
             return ResponseEntity.ok(new TokensResponse(accessToken, refreshToken));

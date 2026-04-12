@@ -57,3 +57,20 @@ interface TokenResponse {
   refreshToken: string
   expiresIn: number
 }
+
+export function getApiErrorMessage(error: unknown, fallback: string) {
+  if (!axios.isAxiosError(error)) return fallback
+
+  const status = error.response?.status
+  const payload = error.response?.data as { error?: string } | undefined
+
+  if (status === 403) {
+    return 'Недостаточно прав для выполнения операции.'
+  }
+
+  if (status === 409) {
+    return payload?.error ?? 'Операция не может быть выполнена из-за конфликта данных.'
+  }
+
+  return payload?.error ?? fallback
+}

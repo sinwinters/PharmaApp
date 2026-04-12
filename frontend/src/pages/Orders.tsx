@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { ordersList, createOrder } from '../api/orders'
 import { drugsApi } from '../api/drugs'
 import { suppliersList } from '../api/suppliers'
+import { getApiErrorMessage } from '../api/client'
 
 export default function Orders() {
   const [page, setPage] = useState(0)
@@ -10,9 +11,10 @@ export default function Orders() {
   const [items, setItems] = useState<{ drugId: number; quantity: number }[]>([])
   const [drugId, setDrugId] = useState<number | ''>('')
   const [qty, setQty] = useState(1)
+  const [actionError, setActionError] = useState<string | null>(null)
   const queryClient = useQueryClient()
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, isFetching } = useQuery({
     queryKey: ['orders', page],
     queryFn: () => ordersList(page, 10),
   })
@@ -24,10 +26,12 @@ export default function Orders() {
     mutationFn: ({ supplierId, items }: { supplierId: number; items: { drugId: number; quantity: number }[] }) =>
       createOrder(supplierId, items),
     onSuccess: () => {
+      setActionError(null)
       queryClient.invalidateQueries({ queryKey: ['orders'] })
       setSupplierId('')
       setItems([])
     },
+    onError: (e) => setActionError(getApiErrorMessage(e, 'Не удалось создать заказ.')),
   })
 
   const addItem = () => {
@@ -40,6 +44,8 @@ export default function Orders() {
   return (
     <div>
       <h1>Заказы поставщикам</h1>
+      {actionError && <p style={{ color: '#b42318' }}>{actionError}</p>}
+      {isFetching && !isLoading && <p>Обновляем список...</p>}
 
       <div style={{ background: '#fff', padding: 16, marginBottom: 24, borderRadius: 8 }}>
         <h3>Новый заказ</h3>
@@ -77,9 +83,9 @@ export default function Orders() {
       </div>
 
       <h3>Список заказов</h3>
-      {isLoading ? <p>Загрузка...</p> : (
+      {isLoading ? <p>Загрузка...</p> : isError ? <p style={{ color: '#b42318' }}>{getApiErrorMessage(error, 'Не удалось загрузить список заказов.')}</p> : (
         <>
-          <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
+          {data && data.content.length === 0 ? <p>Пока нет заказов поставщикам.</p> : <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #eee' }}>
                 <th style={{ textAlign: 'left', padding: 12 }}>ID</th>
@@ -98,7 +104,7 @@ export default function Orders() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table>}
           {data && data.totalPages > 1 && (
             <div style={{ marginTop: 16 }}>
               <button disabled={page === 0} onClick={() => setPage((p) => p - 1)}>Назад</button>

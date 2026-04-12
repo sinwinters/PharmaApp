@@ -4,6 +4,7 @@ import com.pharma.application.dto.LoginRequest;
 import com.pharma.application.dto.TokenResponse;
 import com.pharma.domain.repository.UserRepository;
 import com.pharma.infrastructure.security.JwtService;
+import com.pharma.infrastructure.security.RoleAuthorityUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -27,7 +28,7 @@ public class AuthService {
 
         return userRepository.findByUsername(request.username())
                 .map(u -> {
-                    String access = jwtService.createAccessToken(u.getUsername(), u.getRole().getName());
+                    String access = jwtService.createAccessToken(u.getUsername(), RoleAuthorityUtils.normalizeRoleName(u.getRole().getName()));
                     String refresh = jwtService.createRefreshToken(u.getUsername());
                     return new TokenResponse(access, refresh, 3600L);
                 })
@@ -38,7 +39,7 @@ public class AuthService {
         return jwtService.extractUsername(refreshToken)
                 .flatMap(userRepository::findByUsername)
                 .map(u -> new TokenResponse(
-                        jwtService.createAccessToken(u.getUsername(), u.getRole().getName()),
+                        jwtService.createAccessToken(u.getUsername(), RoleAuthorityUtils.normalizeRoleName(u.getRole().getName())),
                         jwtService.createRefreshToken(u.getUsername()),
                         3600L
                 ));

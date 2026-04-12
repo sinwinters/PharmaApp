@@ -51,14 +51,14 @@ public class DrugController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PHARMACIST')")
     @Operation(summary = "Создать лекарство")
     public ResponseEntity<DrugDto> create(@Valid @RequestBody DrugCreateUpdate dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(drugService.create(dto));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PHARMACIST')")
     @Operation(summary = "Обновить лекарство")
     public ResponseEntity<DrugDto> update(@PathVariable Long id, @Valid @RequestBody DrugCreateUpdate dto) {
         return drugService.findById(id).isEmpty()

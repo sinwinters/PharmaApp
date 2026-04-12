@@ -47,7 +47,7 @@ public class OAuth2SuccessHandler extends SimpleUrlAuthenticationSuccessHandler 
         User user = userRepository.findByUsername(baseUsername)
                 .orElseGet(() -> createOAuthUser(baseUsername, email));
 
-        String role = user.getRole().getName();
+        String role = RoleAuthorityUtils.normalizeRoleName(user.getRole().getName());
         String accessToken = jwtService.createAccessToken(user.getUsername(), role);
         String refreshToken = jwtService.createRefreshToken(user.getUsername());
         String redirectUrl = frontendUrl + "/oauth-callback?accessToken=" + accessToken + "&refreshToken=" + refreshToken;
