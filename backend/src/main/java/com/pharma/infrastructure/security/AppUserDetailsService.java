@@ -2,14 +2,11 @@ package com.pharma.infrastructure.security;
 
 import com.pharma.domain.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -24,7 +21,7 @@ public UserDetails loadUserByUsername(String username) throws UsernameNotFoundEx
                     .username(u.getUsername())
                     .password(u.getPasswordHash()) // 💥 ВАЖНО: только хэш!
                     .disabled(!u.getEnabled())
-                    .authorities("ROLE_" + u.getRole().getName())
+                    .authorities(RoleAuthorityUtils.toAuthority(u.getRole().getName()))
                     .build())
             .orElseThrow(() -> new UsernameNotFoundException("Пользователь не найден"));
 }

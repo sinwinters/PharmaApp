@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { drugsApi, createDrug, updateDrug, deleteDrug, type DrugDto, type DrugCreateUpdate } from '../api/drugs'
 import { categoriesList } from '../api/categories'
 import { suppliersList } from '../api/suppliers'
+import { getApiErrorMessage } from '../api/client'
 
 export default function Drugs() {
   const [page, setPage] = useState(0)
@@ -11,9 +12,14 @@ export default function Drugs() {
   const [supplierId, setSupplierId] = useState<number | ''>('')
   const [editing, setEditing] = useState<DrugDto | null>(null)
   const [form, setForm] = useState<DrugCreateUpdate | null>(null)
+  const [actionError, setActionError] = useState<string | null>(null)
   const queryClient = useQueryClient()
 
-  const { data, isLoading } = useQuery({
+  useEffect(() => {
+    setPage(0)
+  }, [name, categoryId, supplierId])
+
+  const { data, isLoading, isError, error, isFetching } = useQuery({
     queryKey: ['drugs', page, name, categoryId, supplierId],
     queryFn: () => drugsApi({ page, size: 10, name: name || undefined, categoryId: categoryId !== '' ? categoryId : undefined, supplierId: supplierId !== '' ? supplierId : undefined, }),
   })
@@ -21,9 +27,32 @@ export default function Drugs() {
   const { data: categories } = useQuery({ queryKey: ['categories'], queryFn: () => categoriesList(0, 200) })
   const { data: suppliers } = useQuery({ queryKey: ['suppliers'], queryFn: () => suppliersList(0, 200) })
 
-  const createMu = useMutation({ mutationFn: createDrug, onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['drugs'] }); setForm(null) } })
-  const updateMu = useMutation({ mutationFn: ({ id, body }: { id: number; body: DrugCreateUpdate }) => updateDrug(id, body), onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['drugs'] }); setEditing(null) } })
-  const deleteMu = useMutation({ mutationFn: deleteDrug, onSuccess: () => queryClient.invalidateQueries({ queryKey: ['drugs'] }) })
+  const createMu = useMutation({
+    mutationFn: createDrug,
+    onSuccess: () => {
+      setActionError(null)
+      queryClient.invalidateQueries({ queryKey: ['drugs'] })
+      setForm(null)
+    },
+    onError: (e) => setActionError(getApiErrorMessage(e, 'Не удалось создать лекарство.')),
+  })
+  const updateMu = useMutation({
+    mutationFn: ({ id, body }: { id: number; body: DrugCreateUpdate }) => updateDrug(id, body),
+    onSuccess: () => {
+      setActionError(null)
+      queryClient.invalidateQueries({ queryKey: ['drugs'] })
+      setEditing(null)
+    },
+    onError: (e) => setActionError(getApiErrorMessage(e, 'Не удалось обновить лекарство.')),
+  })
+  const deleteMu = useMutation({
+    mutationFn: deleteDrug,
+    onSuccess: () => {
+      setActionError(null)
+      queryClient.invalidateQueries({ queryKey: ['drugs'] })
+    },
+    onError: (e) => setActionError(getApiErrorMessage(e, 'Не удалось удалить лекарство.')),
+  })
 
   const openCreate = () => setForm({ name: '', categoryId: 0, supplierId: 0, minQuantity: 10, unit: 'шт', basePrice: 0 })
   const openEdit = (d: DrugDto) => {
@@ -46,6 +75,9 @@ export default function Drugs() {
         </select>
         <button onClick={openCreate} style={{ padding: '8px 16px' }}>Добавить</button>
       </div>
+
+      {actionError && <p style={{ color: '#b42318' }}>{actionError}</p>}
+      {isFetching && !isLoading && <p>Обновляем список...</p>}
 
       {form && (
         <div style={{ background: '#fff', padding: 16, marginBottom: 16, borderRadius: 8 }}>
@@ -71,9 +103,9 @@ export default function Drugs() {
         </div>
       )}
 
-      {isLoading ? <p>Загрузка...</p> : (
+      {isLoading ? <p>Загрузка...</p> : isError ? <p style={{ color: '#b42318' }}>{getApiErrorMessage(error, 'Не удалось загрузить список лекарств.')}</p> : (
         <>
-          <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
+          {data && data.content.length === 0 ? <p>Ничего не найдено. Измените фильтры или добавьте новое лекарство.</p> : <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #eee' }}>
                 <th style={{ textAlign: 'left', padding: 12 }}>Название</th>
@@ -101,7 +133,7 @@ export default function Drugs() {
                 </tr>
               ))}
             </tbody>
-          </table>
+          </table>}
           {data && data.totalPages > 1 && (
             <div style={{ marginTop: 16 }}>
               <button disabled={page === 0} onClick={() => setPage((p) => p - 1)}>Назад</button>

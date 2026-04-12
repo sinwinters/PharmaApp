@@ -1,6 +1,7 @@
 package com.pharma.infrastructure.web;
 
 import com.pharma.application.exception.InsufficientStockException;
+import com.pharma.application.exception.ConflictException;
 import com.pharma.application.exception.PharmaException;
 import com.pharma.application.exception.ResourceNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -30,6 +31,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(PharmaException.class)
     public ResponseEntity<Map<String, String>> handlePharma(PharmaException e) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<Map<String, String>> handleConflict(ConflictException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", e.getMessage()));
     }
 
 

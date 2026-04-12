@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { suppliersList } from '../api/suppliers'
+import { getApiErrorMessage } from '../api/client'
 
 export default function Suppliers() {
   const [page, setPage] = useState(0)
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError, error, isFetching } = useQuery({
     queryKey: ['suppliers-page', page],
     queryFn: () => suppliersList(page, 10),
   })
@@ -12,7 +13,8 @@ export default function Suppliers() {
   return (
     <div>
       <h1>Поставщики</h1>
-      {isLoading ? <p>Загрузка...</p> : (
+      {isFetching && !isLoading && <p>Обновляем список...</p>}
+      {isLoading ? <p>Загрузка...</p> : isError ? <p style={{ color: '#b42318' }}>{getApiErrorMessage(error, 'Не удалось загрузить поставщиков.')}</p> : data?.content.length === 0 ? <p>Поставщики не найдены.</p> : (
         <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #eee' }}>

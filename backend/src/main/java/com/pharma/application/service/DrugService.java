@@ -2,12 +2,15 @@ package com.pharma.application.service;
 
 import com.pharma.application.dto.DrugCreateUpdate;
 import com.pharma.application.dto.DrugDto;
+import com.pharma.application.exception.ConflictException;
 import com.pharma.application.exception.ResourceNotFoundException;
 import com.pharma.domain.entity.Category;
 import com.pharma.domain.entity.Drug;
 import com.pharma.domain.entity.Stock;
 import com.pharma.domain.repository.CategoryRepository;
 import com.pharma.domain.repository.DrugRepository;
+import com.pharma.domain.repository.OrderRepository;
+import com.pharma.domain.repository.SaleRepository;
 import com.pharma.domain.repository.SupplierRepository;
 import com.pharma.domain.repository.StockRepository;
 import com.pharma.infrastructure.config.CacheConfig;
@@ -33,6 +36,8 @@ public class DrugService {
     private final StockRepository stockRepository;
     private final CategoryRepository categoryRepository;
     private final SupplierRepository supplierRepository;
+    private final OrderRepository orderRepository;
+    private final SaleRepository saleRepository;
 
     @Transactional(readOnly = true)
     public Page<DrugDto> findAll(Specification<Drug> spec, Pageable pageable) {
@@ -99,6 +104,13 @@ public class DrugService {
     @CacheEvict(cacheNames = CacheConfig.CACHE_DRUG, key = "#id")
     public void delete(Long id) {
         if (!drugRepository.existsById(id)) throw new ResourceNotFoundException("Лекарство", id);
+
+        long orderRefs = orderRepository.countByItemsDrugId(id);
+        long saleRefs = saleRepository.countByItemsDrugId(id);
+        if (orderRefs > 0 || saleRefs > 0) {
+            throw new ConflictException("Нельзя удалить лекарство: оно используется в заказах или продажах.");
+        }
+
         drugRepository.deleteById(id);
     }
 
