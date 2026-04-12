@@ -75,6 +75,116 @@ body {
   overflow: auto;
 }
 
+.page-header {
+  margin: 0 0 16px;
+}
+
+.card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.table-wrap {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  padding: 12px;
+}
+
+.table thead tr {
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.btn {
+  border: 0;
+  border-radius: 8px;
+  padding: 8px 14px;
+  cursor: pointer;
+  background: #2563eb;
+  color: #fff;
+}
+
+.btn-secondary {
+  background: #475569;
+}
+
+.empty-state {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 32px 16px;
+  color: #475569;
+}
+
+.empty-state .icon {
+  font-size: 42px;
+  margin-bottom: 6px;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #dbeafe;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #334155;
+}
+
+.top-user {
+  margin-bottom: 12px;
+  font-size: 14px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #1e293b;
+}
+
+.toast-wrap {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 9999;
+  display: grid;
+  gap: 8px;
+}
+
+.toast {
+  background: #0f172a;
+  color: #fff;
+  padding: 10px 12px;
+  border-radius: 10px;
+  min-width: 260px;
+  box-shadow: 0 12px 30px rgba(15, 23, 42, 0.35);
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .login-page {
   min-height: 100vh;
   display: grid;
@@ -132,4 +242,3 @@ body {
 .error-msg {
   color: #dc2626;
 }
-

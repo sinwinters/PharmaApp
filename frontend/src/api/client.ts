@@ -47,7 +47,20 @@ api.interceptors.response.use(
           window.location.href = '/login'
         }
       }
+      if (window.location.pathname !== '/login') {
+        useAuthStore.getState().logout()
+        window.location.href = '/login'
+      }
     }
+
+    if (err.response?.status === 403 && window.location.pathname !== '/forbidden') {
+      window.location.href = '/forbidden'
+    }
+
+    if (err.response?.status && err.response.status >= 500 && window.location.pathname !== '/server-error') {
+      window.location.href = '/server-error'
+    }
+
     return Promise.reject(err)
   }
 )

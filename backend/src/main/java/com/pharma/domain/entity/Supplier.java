@@ -28,6 +28,15 @@ public class Supplier {
     @Column(nullable = false, length = 200)
     private String name;
 
+    @Column(length = 20)
+    private String unp;
+
+    @Column(length = 13)
+    private String gln;
+
+    @Column(length = 255)
+    private String address;
+
     @Column(name = "contact_info", length = 500)
     private String contactInfo;
 

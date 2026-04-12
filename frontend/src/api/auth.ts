@@ -11,9 +11,21 @@ export interface TokenResponse {
   expiresIn: number
 }
 
+export interface CurrentUser {
+  id: number
+  username: string
+  email: string | null
+  roleName: string
+  enabled: boolean
+}
+
 // Используем базовый URL из client.ts, поэтому не добавляем /api/v1 вручную
 export function login(body: LoginRequest) {
   return api.post<TokenResponse>('/auth/login', body).then((r) => r.data)
+}
+
+export function me() {
+  return api.get<CurrentUser>('/auth/me').then((r) => r.data)
 }
 
 // OAuth через Google

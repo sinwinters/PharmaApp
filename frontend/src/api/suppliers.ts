@@ -4,6 +4,9 @@ import type { PageResponse } from './drugs'
 export interface SupplierDto {
   id: number
   name: string
+  unp: string | null
+  gln: string | null
+  address: string | null
   contactInfo: string | null
   email: string | null
   phone: string | null

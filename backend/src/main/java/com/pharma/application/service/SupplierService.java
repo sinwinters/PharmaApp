@@ -32,6 +32,9 @@ public class SupplierService {
     public SupplierDto create(SupplierDto dto) {
         Supplier s = Supplier.builder()
                 .name(dto.name())
+                .unp(dto.unp())
+                .gln(dto.gln())
+                .address(dto.address())
                 .contactInfo(dto.contactInfo())
                 .email(dto.email())
                 .phone(dto.phone())
@@ -45,6 +48,9 @@ public class SupplierService {
         Supplier s = supplierRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Поставщик", id));
         s.setName(dto.name());
+        s.setUnp(dto.unp());
+        s.setGln(dto.gln());
+        s.setAddress(dto.address());
         s.setContactInfo(dto.contactInfo());
         s.setEmail(dto.email());
         s.setPhone(dto.phone());
@@ -58,6 +64,15 @@ public class SupplierService {
     }
 
     private SupplierDto toDto(Supplier s) {
-        return new SupplierDto(s.getId(), s.getName(), s.getContactInfo(), s.getEmail(), s.getPhone());
+        return new SupplierDto(
+                s.getId(),
+                s.getName(),
+                s.getUnp(),
+                s.getGln(),
+                s.getAddress(),
+                s.getContactInfo(),
+                s.getEmail(),
+                s.getPhone()
+        );
     }
 }

@@ -20,6 +20,9 @@ export default function Suppliers() {
             <tr style={{ borderBottom: '2px solid #eee' }}>
               <th style={{ textAlign: 'left', padding: 12 }}>ID</th>
               <th style={{ textAlign: 'left', padding: 12 }}>Название</th>
+              <th style={{ textAlign: 'left', padding: 12 }}>УНП</th>
+              <th style={{ textAlign: 'left', padding: 12 }}>GLN</th>
+              <th style={{ textAlign: 'left', padding: 12 }}>Адрес</th>
               <th style={{ textAlign: 'left', padding: 12 }}>Контакты</th>
               <th style={{ textAlign: 'left', padding: 12 }}>Email</th>
             </tr>
@@ -29,12 +32,15 @@ export default function Suppliers() {
               <tr key={s.id} style={{ borderBottom: '1px solid #eee' }}>
                 <td style={{ padding: 12 }}>{s.id}</td>
                 <td style={{ padding: 12 }}>{s.name}</td>
+                <td style={{ padding: 12 }}>{s.unp ?? '—'}</td>
+                <td style={{ padding: 12 }}>{s.gln ?? '—'}</td>
+                <td style={{ padding: 12 }}>{s.address ?? '—'}</td>
                 <td style={{ padding: 12 }}>{s.contactInfo ?? '—'}</td>
                 <td style={{ padding: 12 }}>{s.email ?? '—'}</td>
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       )}
       {data && data.totalPages > 1 && (
         <div style={{ marginTop: 16 }}>

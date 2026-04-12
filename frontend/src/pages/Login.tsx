@@ -2,12 +2,15 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { useAuthStore } from '../store/authStore'
-import { login, OAUTH_URL } from '../api/auth'
+import { login, me, OAUTH_URL } from '../api/auth'
+import { useToastStore } from '../store/toastStore'
 
 type Form = { username: string; password: string }
 
 export default function Login() {
   const setTokens = useAuthStore((s) => s.setTokens)
+  const setUserInfo = useAuthStore((s) => s.setUserInfo)
+  const pushToast = useToastStore((s) => s.push)
   const navigate = useNavigate()
   const [error, setError] = useState('')
 
@@ -18,6 +21,9 @@ export default function Login() {
     try {
       const res = await login(data)
       setTokens(res.accessToken, res.refreshToken)
+      const currentUser = await me()
+      setUserInfo(currentUser.username, currentUser.roleName)
+      pushToast('Login successful 👋')
       navigate('/')
     } catch {
       setError('Неверный логин или пароль')

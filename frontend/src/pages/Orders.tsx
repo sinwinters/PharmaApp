@@ -13,6 +13,7 @@ export default function Orders() {
   const [qty, setQty] = useState(1)
   const [actionError, setActionError] = useState<string | null>(null)
   const queryClient = useQueryClient()
+  const pushToast = useToastStore((s) => s.push)
 
   const { data, isLoading, isError, error, isFetching } = useQuery({
     queryKey: ['orders', page],
@@ -30,6 +31,7 @@ export default function Orders() {
       queryClient.invalidateQueries({ queryKey: ['orders'] })
       setSupplierId('')
       setItems([])
+      pushToast('Order completed successfully ✅')
     },
     onError: (e) => setActionError(getApiErrorMessage(e, 'Не удалось создать заказ.')),
   })

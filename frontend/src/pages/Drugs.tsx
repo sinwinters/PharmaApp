@@ -14,6 +14,7 @@ export default function Drugs() {
   const [form, setForm] = useState<DrugCreateUpdate | null>(null)
   const [actionError, setActionError] = useState<string | null>(null)
   const queryClient = useQueryClient()
+  const pushToast = useToastStore((s) => s.push)
 
   useEffect(() => {
     setPage(0)
@@ -62,7 +63,7 @@ export default function Drugs() {
 
   return (
     <div>
-      <h1>Лекарства</h1>
+      <h1 className="page-header">Лекарства</h1>
       <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
         <input placeholder="Поиск по названию" value={name} onChange={(e) => setName(e.target.value)} style={{ padding: 8 }} />
         <select value={categoryId} onChange={(e) => setCategoryId(e.target.value === '' ? '' : Number(e.target.value))} style={{ padding: 8 }}>
