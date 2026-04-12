@@ -9,6 +9,8 @@ export default function Categories() {
     queryFn: () => categoriesList(page, 10),
   })
 
+  
+
   return (
     <div>
       <h1>Категории</h1>

@@ -23,30 +23,44 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
 
-    @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
-                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
+   @Override
+protected void doFilterInternal(HttpServletRequest request,
+                                HttpServletResponse response,
+                                FilterChain filterChain)
+        throws ServletException, IOException {
 
-        String authHeader = request.getHeader("Authorization");
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
-        }
+    String authHeader = request.getHeader("Authorization");
 
-        String token = authHeader.substring(7);
-        Optional<String> username = jwtService.extractAccessUsername(token);
-
-        if (username.isPresent() && SecurityContextHolder.getContext().getAuthentication() == null) {
-            var userDetails = userDetailsService.loadUserByUsername(username.get());
-            var auth = new UsernamePasswordAuthenticationToken(
-                    userDetails,
-                    null,
-                    userDetails.getAuthorities()
-            );
-            auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-            SecurityContextHolder.getContext().setAuthentication(auth);
-        }
-
+    // 🔹 нет токена — просто пропускаем
+    if (authHeader == null || !authHeader.startsWith("Bearer ")) {
         filterChain.doFilter(request, response);
+        return;
     }
+
+    String token = authHeader.substring(7);
+
+    Optional<String> username = jwtService.extractAccessUsername(token);
+
+    // 🔥 ВАЖНО: если токен битый — НЕ ЛОМАЕМ ЗАПРОС
+    if (username.isEmpty()) {
+        filterChain.doFilter(request, response);
+        return;
+    }
+
+    // 🔹 если пользователь ещё не установлен — устанавливаем
+    if (SecurityContextHolder.getContext().getAuthentication() == null) {
+        var userDetails = userDetailsService.loadUserByUsername(username.get());
+
+        var auth = new UsernamePasswordAuthenticationToken(
+                userDetails,
+                null,
+                userDetails.getAuthorities()
+        );
+
+        auth.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+        SecurityContextHolder.getContext().setAuthentication(auth);
+    }
+
+    filterChain.doFilter(request, response);
+}
 }

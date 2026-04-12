@@ -7,7 +7,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
-
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import java.util.List;
 
 @Configuration
@@ -15,6 +15,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final AppUserDetailsService userDetailsService;
+    private final JwtAuthFilter jwtAuthFilter; // 🔥 ДОБАВИТЬ
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
@@ -35,9 +36,18 @@ public class SecurityConfig {
             }))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/auth/**").permitAll()
+                .requestMatchers("/api/v1/drugs/**", "/api/v1/categories/**", "/api/v1/suppliers/**").permitAll()
+                .requestMatchers("/api/v1/stocks/**").hasAnyRole("ADMIN", "PHARMACIST")
+                .requestMatchers("/api/v1/analytics/**").hasAnyRole("ADMIN", "PHARMACIST")
+                .requestMatchers("/api/v1/analytics/reports/minzdrav-rb").hasAnyRole("ADMIN", "PHARMACIST")
+                .requestMatchers("/api/v1/users/**").hasRole("ADMIN")
+                .requestMatchers("/api/v1/sales/**").hasAnyRole("ADMIN", "PHARMACIST")
+                .requestMatchers("/api/v1/orders/**").hasAnyRole("ADMIN", "MANAGER")
                 .anyRequest().authenticated()
-            )
-            .userDetailsService(userDetailsService);
+            ); // 🔥 ВАЖНО: точка с запятой
+
+        http.userDetailsService(userDetailsService);
+        http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

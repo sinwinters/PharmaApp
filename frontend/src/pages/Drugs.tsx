@@ -15,7 +15,7 @@ export default function Drugs() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['drugs', page, name, categoryId, supplierId],
-    queryFn: () => drugsApi({ page, size: 10, name: name || undefined, categoryId: categoryId || undefined, supplierId: supplierId || undefined }),
+    queryFn: () => drugsApi({ page, size: 10, name: name || undefined, categoryId: categoryId !== '' ? categoryId : undefined, supplierId: supplierId !== '' ? supplierId : undefined, }),
   })
 
   const { data: categories } = useQuery({ queryKey: ['categories'], queryFn: () => categoriesList(0, 200) })
@@ -56,7 +56,7 @@ export default function Drugs() {
             <input placeholder="Ед." value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} />
             <input type="number" step="0.01" placeholder="Цена" value={form.basePrice || ''} onChange={(e) => setForm({ ...form, basePrice: Number(e.target.value) })} />
             <select value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: Number(e.target.value) })}>
-              <option value={0}>Категория</option>
+              <option value={1}>Категория</option>
               {categories?.content.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
             <select value={form.supplierId} onChange={(e) => setForm({ ...form, supplierId: Number(e.target.value) })}>
