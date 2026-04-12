@@ -4,9 +4,6 @@ import { ordersList, createOrder } from '../api/orders'
 import { drugsApi } from '../api/drugs'
 import { suppliersList } from '../api/suppliers'
 import { getApiErrorMessage } from '../api/client'
-import Spinner from '../components/Spinner'
-import EmptyState from '../components/EmptyState'
-import { useToastStore } from '../store/toastStore'
 
 export default function Orders() {
   const [page, setPage] = useState(0)
@@ -48,7 +45,7 @@ export default function Orders() {
 
   return (
     <div>
-      <h1 className="page-header">Заказы поставщикам</h1>
+      <h1>Заказы поставщикам</h1>
       {actionError && <p style={{ color: '#b42318' }}>{actionError}</p>}
       {isFetching && !isLoading && <p>Обновляем список...</p>}
 
@@ -88,9 +85,9 @@ export default function Orders() {
       </div>
 
       <h3>Список заказов</h3>
-      {isLoading ? <Spinner label="Загружаем заказы..." /> : isError ? <p style={{ color: '#b42318' }}>{getApiErrorMessage(error, 'Не удалось загрузить список заказов.')}</p> : (
+      {isLoading ? <p>Загрузка...</p> : isError ? <p style={{ color: '#b42318' }}>{getApiErrorMessage(error, 'Не удалось загрузить список заказов.')}</p> : (
         <>
-          {data && data.content.length === 0 ? <EmptyState icon="💤" message="No orders yet — pharmacy is quiet today 💤" /> : <div className="table-wrap"><table className="table">
+          {data && data.content.length === 0 ? <p>Пока нет заказов поставщикам.</p> : <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #eee' }}>
                 <th style={{ textAlign: 'left', padding: 12 }}>ID</th>
@@ -109,7 +106,7 @@ export default function Orders() {
                 </tr>
               ))}
             </tbody>
-          </table></div>}
+          </table>}
           {data && data.totalPages > 1 && (
             <div style={{ marginTop: 16 }}>
               <button disabled={page === 0} onClick={() => setPage((p) => p - 1)}>Назад</button>

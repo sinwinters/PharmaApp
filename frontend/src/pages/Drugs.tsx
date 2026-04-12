@@ -4,9 +4,6 @@ import { drugsApi, createDrug, updateDrug, deleteDrug, type DrugDto, type DrugCr
 import { categoriesList } from '../api/categories'
 import { suppliersList } from '../api/suppliers'
 import { getApiErrorMessage } from '../api/client'
-import Spinner from '../components/Spinner'
-import EmptyState from '../components/EmptyState'
-import { useToastStore } from '../store/toastStore'
 
 export default function Drugs() {
   const [page, setPage] = useState(0)
@@ -37,7 +34,6 @@ export default function Drugs() {
       setActionError(null)
       queryClient.invalidateQueries({ queryKey: ['drugs'] })
       setForm(null)
-      pushToast('Drug successfully added 💊')
     },
     onError: (e) => setActionError(getApiErrorMessage(e, 'Не удалось создать лекарство.')),
   })
@@ -47,7 +43,6 @@ export default function Drugs() {
       setActionError(null)
       queryClient.invalidateQueries({ queryKey: ['drugs'] })
       setEditing(null)
-      pushToast('Drug updated successfully 💊')
     },
     onError: (e) => setActionError(getApiErrorMessage(e, 'Не удалось обновить лекарство.')),
   })
@@ -56,7 +51,6 @@ export default function Drugs() {
     onSuccess: () => {
       setActionError(null)
       queryClient.invalidateQueries({ queryKey: ['drugs'] })
-      pushToast('Drug deleted successfully 🗑️')
     },
     onError: (e) => setActionError(getApiErrorMessage(e, 'Не удалось удалить лекарство.')),
   })
@@ -110,9 +104,9 @@ export default function Drugs() {
         </div>
       )}
 
-      {isLoading ? <Spinner label="Загружаем лекарства..." /> : isError ? <p style={{ color: '#b42318' }}>{getApiErrorMessage(error, 'Не удалось загрузить список лекарств.')}</p> : (
+      {isLoading ? <p>Загрузка...</p> : isError ? <p style={{ color: '#b42318' }}>{getApiErrorMessage(error, 'Не удалось загрузить список лекарств.')}</p> : (
         <>
-          {data && data.content.length === 0 ? <EmptyState icon="🧴" message="No drugs found in inventory 🧴" action={<button className="btn" onClick={openCreate}>Добавить лекарство</button>} /> : <div className="table-wrap"><table className="table">
+          {data && data.content.length === 0 ? <p>Ничего не найдено. Измените фильтры или добавьте новое лекарство.</p> : <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
             <thead>
               <tr style={{ borderBottom: '2px solid #eee' }}>
                 <th style={{ textAlign: 'left', padding: 12 }}>Название</th>
@@ -140,7 +134,7 @@ export default function Drugs() {
                 </tr>
               ))}
             </tbody>
-          </table></div>}
+          </table>}
           {data && data.totalPages > 1 && (
             <div style={{ marginTop: 16 }}>
               <button disabled={page === 0} onClick={() => setPage((p) => p - 1)}>Назад</button>

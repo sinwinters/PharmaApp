@@ -2,8 +2,6 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { suppliersList } from '../api/suppliers'
 import { getApiErrorMessage } from '../api/client'
-import Spinner from '../components/Spinner'
-import EmptyState from '../components/EmptyState'
 
 export default function Suppliers() {
   const [page, setPage] = useState(0)
@@ -14,10 +12,10 @@ export default function Suppliers() {
 
   return (
     <div>
-      <h1 className="page-header">Поставщики</h1>
+      <h1>Поставщики</h1>
       {isFetching && !isLoading && <p>Обновляем список...</p>}
-      {isLoading ? <Spinner label="Загружаем поставщиков..." /> : isError ? <p style={{ color: '#b42318' }}>{getApiErrorMessage(error, 'Не удалось загрузить поставщиков.')}</p> : data?.content.length === 0 ? <EmptyState icon="🚚" message="No suppliers added yet 🚚" /> : (
-        <div className="table-wrap"><table className="table">
+      {isLoading ? <p>Загрузка...</p> : isError ? <p style={{ color: '#b42318' }}>{getApiErrorMessage(error, 'Не удалось загрузить поставщиков.')}</p> : data?.content.length === 0 ? <p>Поставщики не найдены.</p> : (
+        <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
           <thead>
             <tr style={{ borderBottom: '2px solid #eee' }}>
               <th style={{ textAlign: 'left', padding: 12 }}>ID</th>
