@@ -1,15 +1,18 @@
 package com.pharma.application.dto;
 
+import com.pharma.domain.entity.OrderStatus;
+
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.List;
 
 public record OrderDto(
         Long id,
         Long supplierId,
         String supplierName,
-        String status,
+        OrderStatus status,
         Long createdBy,
-        Instant createdAt,
+        LocalDateTime createdAt,
         String destinationGln,
         String invoiceNumber,
         Instant invoiceGeneratedAt,

@@ -15,6 +15,9 @@ public class QuartzConfig {
     @Value("${app.auto-order.cron:0 0 2 * * ?}")
     private String autoOrderCron;
 
+    @Value("${app.stock-writeoff.cron:0 30 2 * * ?}")
+    private String stockWriteOffCron;
+
     @Bean
     public JobDetail autoOrderJobDetail() {
         return JobBuilder.newJob(AutoOrderJob.class)
@@ -29,6 +32,23 @@ public class QuartzConfig {
                 .forJob(autoOrderJobDetail)
                 .withIdentity("autoOrderTrigger", "pharma")
                 .withSchedule(CronScheduleBuilder.cronSchedule(autoOrderCron))
+                .build();
+    }
+
+    @Bean
+    public JobDetail stockWriteOffJobDetail() {
+        return JobBuilder.newJob(StockWriteOffJob.class)
+                .withIdentity("stockWriteOffJob", "pharma")
+                .storeDurably()
+                .build();
+    }
+
+    @Bean
+    public Trigger stockWriteOffTrigger(JobDetail stockWriteOffJobDetail) {
+        return TriggerBuilder.newTrigger()
+                .forJob(stockWriteOffJobDetail)
+                .withIdentity("stockWriteOffTrigger", "pharma")
+                .withSchedule(CronScheduleBuilder.cronSchedule(stockWriteOffCron))
                 .build();
     }
 }

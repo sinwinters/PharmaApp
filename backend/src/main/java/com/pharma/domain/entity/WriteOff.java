@@ -2,6 +2,8 @@ package com.pharma.domain.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -16,48 +18,42 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "sale_items")
+@Table(name = "write_offs")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class SaleItem {
+public class WriteOff {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "sale_id", nullable = false)
-    private Sale sale;
-
-    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "drug_id", nullable = false)
     private Drug drug;
-
-    @Column(name = "drug_name", length = 300)
-    private String drugName;
 
     @Column(nullable = false)
     private Integer quantity;
 
-    @Column(name = "unit_price", nullable = false, precision = 12, scale = 2)
-    private BigDecimal unitPrice;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private WriteOffReason reason;
 
-    @Column(name = "line_total", nullable = false, precision = 12, scale = 2)
-    private BigDecimal total;
+    @Column(length = 500)
+    private String comment;
+
+    @Column(name = "created_at", nullable = false)
+    private LocalDateTime createdAt;
 
     @PrePersist
-    void prePersist() {
-        if (drugName == null && drug != null) {
-            drugName = drug.getName();
-        }
-        if (total == null && unitPrice != null && quantity != null) {
-            total = unitPrice.multiply(BigDecimal.valueOf(quantity));
+    void onCreate() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
         }
     }
 }
