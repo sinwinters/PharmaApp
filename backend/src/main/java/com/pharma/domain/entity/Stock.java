@@ -44,18 +44,6 @@ public class Stock {
     @Builder.Default
     private Integer quantity = 0;
 
-    @Column(name = "reserved_quantity", nullable = false)
-    @Builder.Default
-    private Integer reservedQuantity = 0;
-
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
-    @Builder.Default
-    private StockStatus status = StockStatus.AVAILABLE;
-
-    @Column(name = "expiration_date")
-    private LocalDate expirationDate;
-
     @Column(name = "expires_at")
     private Instant expiresAt;
 
