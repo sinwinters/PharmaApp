@@ -19,6 +19,7 @@ public class CacheConfig {
     public static final String CACHE_CATEGORIES = "categories";
     public static final String CACHE_DRUG = "drug";
     public static final String CACHE_SUPPLIERS = "suppliers";
+    public static final String CACHE_ORDERS_LIST = "ordersList";
 
     @Bean
     public CacheManager cacheManager(RedisConnectionFactory connectionFactory) {
@@ -30,7 +31,8 @@ public class CacheConfig {
         Map<String, RedisCacheConfiguration> cacheConfigurations = Map.of(
                 CACHE_CATEGORIES, defaultConfig.entryTtl(Duration.ofMinutes(30)),
                 CACHE_DRUG, defaultConfig.entryTtl(Duration.ofMinutes(5)),
-                CACHE_SUPPLIERS, defaultConfig.entryTtl(Duration.ofMinutes(30))
+                CACHE_SUPPLIERS, defaultConfig.entryTtl(Duration.ofMinutes(30)),
+                CACHE_ORDERS_LIST, defaultConfig.entryTtl(Duration.ofMinutes(2))
         );
 
         return RedisCacheManager.builder(connectionFactory)

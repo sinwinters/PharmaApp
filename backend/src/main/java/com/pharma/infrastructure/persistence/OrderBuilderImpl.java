@@ -4,6 +4,7 @@ import com.pharma.application.exception.ResourceNotFoundException;
 import com.pharma.domain.entity.Drug;
 import com.pharma.domain.entity.Order;
 import com.pharma.domain.entity.OrderItem;
+import com.pharma.domain.entity.OrderStatus;
 import com.pharma.domain.entity.Supplier;
 import com.pharma.domain.entity.User;
 import com.pharma.application.port.OrderBuilder;
@@ -11,7 +12,7 @@ import com.pharma.domain.repository.DrugRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,10 +52,10 @@ public class OrderBuilderImpl implements OrderBuilder {
         if (supplier == null) throw new IllegalStateException("Поставщик не указан");
         Order order = Order.builder()
                 .supplier(supplier)
-                .status("DRAFT")
+                .status(OrderStatus.CREATED)
                 .createdBy(createdBy)
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
+                .createdAt(LocalDateTime.now())
+                .updatedAt(LocalDateTime.now())
                 .build();
         for (OrderItemEntry e : entries) {
             Drug drug = drugRepository.findById(e.drugId())
