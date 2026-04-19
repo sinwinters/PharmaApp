@@ -41,6 +41,9 @@ public class Stock {
     @Builder.Default
     private Integer quantity = 0;
 
+    @Column(name = "expires_at")
+    private Instant expiresAt;
+
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
