@@ -30,4 +30,16 @@ public class Category {
 
     @Column(length = 500)
     private String description;
+
+    @Column(name = "requires_prescription", nullable = false)
+    @Builder.Default
+    private Boolean requiresPrescription = false;
+
+    @Column(name = "requires_strict_control", nullable = false)
+    @Builder.Default
+    private Boolean requiresStrictControl = false;
+
+    @Column(name = "requires_verification", nullable = false)
+    @Builder.Default
+    private Boolean requiresVerification = false;
 }

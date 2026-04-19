@@ -10,11 +10,14 @@ import com.pharma.application.dto.SaleResponseDto;
 import com.pharma.application.exception.InsufficientStockException;
 import com.pharma.application.exception.PharmaException;
 import com.pharma.application.exception.ResourceNotFoundException;
+import com.pharma.application.exception.PrescriptionNotVerifiedException;
+import com.pharma.application.exception.PrescriptionRequiredException;
 import com.pharma.domain.entity.Drug;
 import com.pharma.domain.entity.Sale;
 import com.pharma.domain.entity.SaleItem;
 import com.pharma.domain.entity.SaleStatus;
 import com.pharma.domain.entity.Stock;
+import com.pharma.domain.entity.Prescription;
 import com.pharma.domain.entity.User;
 import com.pharma.domain.observer.LowStockNotifier;
 import com.pharma.domain.repository.DrugRepository;
@@ -71,6 +74,8 @@ public class SaleService {
                 .totalAmount(BigDecimal.ZERO)
                 .build();
 
+        Prescription linkedPrescription = resolveLegacyPrescription(request);
+
         List<SaleItem> items = new ArrayList<>();
         List<Drug> soldDrugs = new ArrayList<>();
         BigDecimal totalBeforeDiscount = BigDecimal.ZERO;
@@ -80,6 +85,7 @@ public class SaleService {
             Drug drug = drugRepository.findByIdWithAssociations(req.drugId())
                     .orElseThrow(() -> new ResourceNotFoundException("Лекарство", req.drugId()));
             soldDrugs.add(drug);
+            enforcePrescriptionPolicy(drug, linkedPrescription);
             Stock stock = stockRepository.findByDrugId(drug.getId())
                     .orElseThrow(() -> new ResourceNotFoundException("Остаток", req.drugId()));
             int qty = req.quantity();
@@ -123,6 +129,7 @@ public class SaleService {
         sale.setTotalAmount(totalBeforeDiscount.subtract(totalDiscount));
         sale.setItems(items);
         sale = saleRepository.save(sale);
+        auditLogService.log("SALE", username, "Sale", sale.getId());
 
         return toDto(sale, discountPercent, benefit, edsRequired, edsValidated, request.edsProvider(), request.prescriptionNumber());
     }
@@ -233,7 +240,10 @@ public class SaleService {
 
         sale.setTotalAmount(totalAmount);
         sale.setItems(items);
+        sale.setPrescription(linkedPrescription);
         Sale saved = saleRepository.save(sale);
+
+        auditLogService.log("SALE", username, "Sale", saved.getId());
 
         if (saved.getIsPrescriptionSale()) {
             log.info("Продажа по медкарте выполнена: saleId={}, card={}", saved.getId(), saved.getMedicalCardNumber());
