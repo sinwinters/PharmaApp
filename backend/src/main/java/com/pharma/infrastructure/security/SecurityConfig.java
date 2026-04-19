@@ -3,6 +3,7 @@ package com.pharma.infrastructure.security;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -10,7 +11,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import org.springframework.http.HttpMethod;
 import java.util.List;
 
 @Configuration
@@ -19,7 +19,7 @@ import java.util.List;
 public class SecurityConfig {
 
     private final AppUserDetailsService userDetailsService;
-    private final JwtAuthFilter jwtAuthFilter; // 🔥 ДОБАВИТЬ
+    private final JwtAuthFilter jwtAuthFilter;
 
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
@@ -28,31 +28,60 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
         http
             .csrf(csrf -> csrf.disable())
+
             .cors(cors -> cors.configurationSource(request -> {
-                var config = new org.springframework.web.cors.CorsConfiguration();
-                config.setAllowedOrigins(List.of("http://localhost:5173"));
-                config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
-                config.setAllowedHeaders(List.of("*"));
-                config.setAllowCredentials(true);
-                return config;
+                var c = new org.springframework.web.cors.CorsConfiguration();
+                c.setAllowedOrigins(List.of("http://localhost:5173"));
+                c.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
+                c.setAllowedHeaders(List.of("*"));
+                c.setAllowCredentials(true);
+                return c;
             }))
+
             .authorizeHttpRequests(auth -> auth
+
+                // 🔓 auth
                 .requestMatchers("/auth/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/drugs/**").hasAnyRole("ADMIN", "PHARMACIST", "MANAGER")
-                .requestMatchers(HttpMethod.POST, "/drugs/**").hasAnyRole("ADMIN", "PHARMACIST")
-                .requestMatchers(HttpMethod.PUT, "/drugs/**").hasAnyRole("ADMIN", "PHARMACIST")
-                .requestMatchers(HttpMethod.DELETE, "/drugs/**").hasRole("ADMIN")
-                .requestMatchers("/categories/**", "/suppliers/**").permitAll()
-                .requestMatchers("/stocks/**").hasAnyRole("ADMIN", "PHARMACIST")
-                .requestMatchers("/analytics/**").hasAnyRole("ADMIN", "PHARMACIST")
-                .requestMatchers("/analytics/reports/minzdrav-rb").hasAnyRole("ADMIN", "PHARMACIST")
-                .requestMatchers("/users/**").hasRole("ADMIN")
-                .requestMatchers("/sales/**").hasAnyRole("ADMIN", "PHARMACIST")
-                .requestMatchers("/orders/**").hasAnyRole("ADMIN", "MANAGER")
+
+                // 🔥 FIX: preflight (очень часто причина 403 в браузере)
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+
+                // 🔥 drugs
+                .requestMatchers(HttpMethod.GET, "/drugs/**")
+                    .hasAnyRole("ADMIN", "PHARMACIST", "MANAGER")
+
+                .requestMatchers(HttpMethod.POST, "/drugs/**")
+                    .hasAnyRole("ADMIN", "PHARMACIST")
+
+                .requestMatchers(HttpMethod.PUT, "/drugs/**")
+                    .hasAnyRole("ADMIN", "PHARMACIST")
+
+                .requestMatchers(HttpMethod.DELETE, "/drugs/**")
+                    .hasRole("ADMIN")
+
+                // 🔥 categories (оставляем только ADMIN)
+                .requestMatchers("/categories/**")
+                    .hasRole("ADMIN")
+
+                // 🔥 suppliers
+                .requestMatchers("/suppliers/**")
+                    .hasRole("ADMIN")
+
+                // orders / analytics
+                .requestMatchers("/orders/**")
+                    .hasAnyRole("ADMIN", "MANAGER", "PHARMACIST")
+
+                .requestMatchers("/analytics/**")
+                    .hasAnyRole("ADMIN", "PHARMACIST")
+
+                // 🔥 важно: чтобы ошибки не ломали доступ
+                .requestMatchers("/error").permitAll()
+
                 .anyRequest().authenticated()
-            ); // 🔥 ВАЖНО: точка с запятой
+            );
 
         http.userDetailsService(userDetailsService);
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

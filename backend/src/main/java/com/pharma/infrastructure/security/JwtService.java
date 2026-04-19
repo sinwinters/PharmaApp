@@ -2,8 +2,8 @@ package com.pharma.infrastructure.security;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.JwtException;
+import io.jsonwebtoken.SignatureAlgorithm;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,8 +17,6 @@ import java.util.Optional;
 public class JwtService {
 
     private final JwtProperties props;
-
-    // Кешируем ключ для подписи
     private volatile SecretKey cachedKey;
 
     private SecretKey key() {
@@ -27,7 +25,9 @@ public class JwtService {
             synchronized (this) {
                 local = cachedKey;
                 if (local == null) {
-                    local = io.jsonwebtoken.security.Keys.hmacShaKeyFor(props.getSecret().getBytes(StandardCharsets.UTF_8));
+                    local = io.jsonwebtoken.security.Keys.hmacShaKeyFor(
+                            props.getSecret().getBytes(StandardCharsets.UTF_8)
+                    );
                     cachedKey = local;
                 }
             }
@@ -35,7 +35,7 @@ public class JwtService {
         return local;
     }
 
-    // Генерация access токена
+    // ACCESS TOKEN
     public String createAccessToken(String username, String role) {
         return Jwts.builder()
                 .setSubject(username)
@@ -43,49 +43,48 @@ public class JwtService {
                 .claim("type", "access")
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + props.getAccessTtl()))
-                .signWith(SignatureAlgorithm.HS256, key())
+                .signWith(key(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // Генерация refresh токена
+    // REFRESH TOKEN
     public String createRefreshToken(String username) {
         return Jwts.builder()
                 .setSubject(username)
                 .claim("type", "refresh")
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + props.getRefreshTtl()))
-                .signWith(SignatureAlgorithm.HS256, key())
+                .signWith(key(), SignatureAlgorithm.HS256)
                 .compact();
     }
 
-    // Извлекаем username любого токена
+    // ✅ FIX: универсальное извлечение username (ТО, ЧЕГО НЕ ХВАТАЛО)
     public Optional<String> extractUsername(String token) {
         return parseClaims(token).map(Claims::getSubject);
     }
 
-    // Извлекаем username только access токена
     public Optional<String> extractAccessUsername(String token) {
         return parseClaims(token)
-                .filter(claims -> "access".equals(claims.get("type", String.class)))
+                .filter(c -> "access".equals(c.get("type", String.class)))
                 .map(Claims::getSubject);
     }
 
     public Optional<String> extractAccessRole(String token) {
         return parseClaims(token)
-                .filter(claims -> "access".equals(claims.get("type", String.class)))
-                .map(claims -> claims.get("role", String.class))
-                .map(RoleAuthorityUtils::normalizeRoleName)
-                .filter(role -> !role.isBlank());
+                .filter(c -> "access".equals(c.get("type", String.class)))
+                .map(c -> c.get("role", String.class))
+                .filter(r -> r != null && !r.isBlank());
     }
 
-    // Разбор токена
     private Optional<Claims> parseClaims(String token) {
         try {
-            Claims claims = Jwts.parser()
-                    .setSigningKey(key())
-                    .parseClaimsJws(token)
-                    .getBody();
-            return Optional.of(claims);
+            return Optional.of(
+                    Jwts.parserBuilder()
+                            .setSigningKey(key())
+                            .build()
+                            .parseClaimsJws(token)
+                            .getBody()
+            );
         } catch (JwtException e) {
             return Optional.empty();
         }
