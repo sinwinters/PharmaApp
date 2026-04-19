@@ -28,6 +28,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -49,6 +50,10 @@ class SaleServiceTest {
     private BenefitPolicyService benefitPolicyService;
     @Mock
     private AvestEdsGateway avestEdsGateway;
+    @Mock
+    private ReceiptService receiptService;
+    @Mock
+    private InventoryPolicyService inventoryPolicyService;
 
     @InjectMocks
     private SaleService saleService;
@@ -79,8 +84,8 @@ class SaleServiceTest {
         when(userRepository.findByUsername("u")).thenReturn(Optional.of(user));
         when(drugRepository.findByIdWithAssociations(1L)).thenReturn(Optional.of(drug));
         when(stockRepository.findByDrugId(1L)).thenReturn(Optional.of(stock));
-
         when(benefitPolicyService.resolveProgram(any())).thenReturn(Optional.empty());
+        doNothing().when(inventoryPolicyService).assertSellAllowed(any());
 
         SaleCreateRequest request = new SaleCreateRequest(List.of(new SaleItemRequest(1L, 5)), null, null, null, null);
 

@@ -83,6 +83,7 @@ public class SaleService {
             Stock stock = stockRepository.findByDrugId(drug.getId())
                     .orElseThrow(() -> new ResourceNotFoundException("Остаток", req.drugId()));
             int qty = req.quantity();
+            inventoryPolicyService.assertSellAllowed(stock);
             if (stock.getQuantity() < qty) {
                 throw new InsufficientStockException(drug.getName(), qty, Optional.of(stock.getQuantity()));
             }
