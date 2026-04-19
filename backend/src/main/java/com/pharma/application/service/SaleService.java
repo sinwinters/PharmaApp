@@ -32,6 +32,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -44,6 +46,8 @@ import java.util.Optional;
 @Slf4j
 public class SaleService {
 
+    private static final long EXPIRING_SOON_DAYS = 30;
+
     private final SaleRepository saleRepository;
     private final DrugRepository drugRepository;
     private final StockRepository stockRepository;
@@ -53,7 +57,6 @@ public class SaleService {
     private final BenefitPolicyService benefitPolicyService;
     private final AvestEdsGateway avestEdsGateway;
     private final ReceiptService receiptService;
-    private final InventoryPolicyService inventoryPolicyService;
 
     @Transactional
     public SaleDto createSale(SaleCreateRequest request, String username) {
@@ -102,7 +105,7 @@ public class SaleService {
             totalBeforeDiscount = totalBeforeDiscount.add(lineBase);
             totalDiscount = totalDiscount.add(lineDiscount);
 
-            inventoryPolicyService.deductByFefo(drug.getId(), qty);
+            decreaseStock(stock, qty);
             if (stock.getQuantity() <= drug.getMinQuantity()) {
                 lowStockNotifier.notifyLowStock(drug, stock.getQuantity(), drug.getMinQuantity());
             }
@@ -197,7 +200,8 @@ public class SaleService {
             Stock stock = stockRepository.findByDrugId(req.drugId())
                     .orElseThrow(() -> new ResourceNotFoundException("Остаток", req.drugId()));
 
-            inventoryPolicyService.assertSellAllowed(stock);
+            validateExpiry(stock, drug);
+
             if (stock.getQuantity() < req.quantity()) {
                 throw new InsufficientStockException(drug.getName(), req.quantity(), Optional.of(stock.getQuantity()));
             }
@@ -219,7 +223,7 @@ public class SaleService {
                     .build();
             items.add(item);
 
-            inventoryPolicyService.deductByFefo(drug.getId(), req.quantity());
+            decreaseStock(stock, req.quantity());
             if (stock.getQuantity() <= drug.getMinQuantity()) {
                 lowStockNotifier.notifyLowStock(drug, stock.getQuantity(), drug.getMinQuantity());
             }
@@ -238,6 +242,31 @@ public class SaleService {
         return toResponseDto(saved);
     }
 
+    private void validateExpiry(Stock stock, Drug drug) {
+        if (stock.getExpiresAt() == null) {
+            return;
+        }
+
+        Instant now = Instant.now();
+        if (stock.getExpiresAt().isBefore(now)) {
+            throw new PharmaException("Нельзя продать просроченный препарат: " + drug.getName());
+        }
+
+        Instant soonBorder = now.plus(EXPIRING_SOON_DAYS, ChronoUnit.DAYS);
+        if (stock.getExpiresAt().isBefore(soonBorder)) {
+            log.warn("Срок годности скоро истекает: drugId={}, drugName={}, expiresAt={}",
+                    drug.getId(), drug.getName(), stock.getExpiresAt());
+        }
+    }
+
+    private void decreaseStock(Stock stock, int quantity) {
+        int newQuantity = stock.getQuantity() - quantity;
+        if (newQuantity < 0) {
+            throw new PharmaException("Недостаточный остаток для списания");
+        }
+        stock.setQuantity(newQuantity);
+        stockRepository.save(stock);
+    }
 
     private boolean validateEdsIfRequired(SaleCreateRequest request, boolean edsRequired) {
         if (!edsRequired) return false;
