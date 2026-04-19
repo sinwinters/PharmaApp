@@ -3,6 +3,8 @@ package com.pharma.domain.entity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -10,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -45,6 +48,23 @@ public class Sale {
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "payment_type", nullable = false, length = 20)
+    @Builder.Default
+    private PaymentType paymentType = PaymentType.CASH;
+
+    @Column(name = "medical_card_number", length = 64)
+    private String medicalCardNumber;
+
+    @Column(name = "is_prescription_sale", nullable = false)
+    @Builder.Default
+    private Boolean isPrescriptionSale = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    @Builder.Default
+    private SaleStatus status = SaleStatus.COMPLETED;
+
     @Column(name = "eds_required", nullable = false)
     private Boolean edsRequired;
 
@@ -57,7 +77,18 @@ public class Sale {
     @Column(name = "prescription_number")
     private String prescriptionNumber;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "prescription_id")
+    private Prescription prescription;
+
     @OneToMany(mappedBy = "sale", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<SaleItem> items = new ArrayList<>();
+
+    @PrePersist
+    void prePersist() {
+        if (createdAt == null) {
+            createdAt = Instant.now();
+        }
+    }
 }

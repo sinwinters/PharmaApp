@@ -42,10 +42,13 @@ public class CategoryController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Создать категорию")
-    public ResponseEntity<CategoryDto> create(@RequestBody Map<String, String> body) {
+    public ResponseEntity<CategoryDto> create(@RequestBody Map<String, Object> body) {
         CategoryDto created = categoryService.create(
-                body.getOrDefault("name", ""),
-                body.get("description")
+                String.valueOf(body.getOrDefault("name", "")),
+                body.get("description") != null ? String.valueOf(body.get("description")) : null,
+                asBoolean(body.get("requiresPrescription")),
+                asBoolean(body.get("requiresStrictControl")),
+                asBoolean(body.get("requiresVerification"))
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
@@ -53,11 +56,14 @@ public class CategoryController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "Обновить категорию")
-    public ResponseEntity<CategoryDto> update(@PathVariable Long id, @RequestBody Map<String, String> body) {
+    public ResponseEntity<CategoryDto> update(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         return ResponseEntity.ok(categoryService.update(
                 id,
-                body.getOrDefault("name", ""),
-                body.get("description")
+                String.valueOf(body.getOrDefault("name", "")),
+                body.get("description") != null ? String.valueOf(body.get("description")) : null,
+                asBoolean(body.get("requiresPrescription")),
+                asBoolean(body.get("requiresStrictControl")),
+                asBoolean(body.get("requiresVerification"))
         ));
     }
 
@@ -67,5 +73,15 @@ public class CategoryController {
     public ResponseEntity<Void> delete(@PathVariable Long id) {
         categoryService.delete(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private Boolean asBoolean(Object value) {
+        if (value == null) {
+            return false;
+        }
+        if (value instanceof Boolean b) {
+            return b;
+        }
+        return Boolean.parseBoolean(String.valueOf(value));
     }
 }
