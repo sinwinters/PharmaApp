@@ -18,7 +18,6 @@ import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.atLeastOnce;
-import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,8 +28,6 @@ class WriteOffServiceTest {
     private WriteOffRepository writeOffRepository;
     @Mock
     private StockRepository stockRepository;
-    @Mock
-    private AuditLogService auditLogService;
 
     @InjectMocks
     private WriteOffService writeOffService;
@@ -46,7 +43,6 @@ class WriteOffServiceTest {
                 .expirationDate(LocalDate.now().plusDays(10)).build();
 
         when(stockRepository.findAll()).thenReturn(List.of(expired, defect));
-        when(writeOffRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
 
         writeOffService.autoWriteOffExpiredAndDefective();
 
