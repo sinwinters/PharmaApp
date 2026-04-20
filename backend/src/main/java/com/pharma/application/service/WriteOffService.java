@@ -23,7 +23,6 @@ public class WriteOffService {
 
     private final WriteOffRepository writeOffRepository;
     private final StockRepository stockRepository;
-    private final AuditLogService auditLogService;
 
     @Transactional
     public void autoWriteOffExpiredAndDefective() {
@@ -80,8 +79,7 @@ public class WriteOffService {
                 .reason(reason)
                 .comment(comment)
                 .build();
-        writeOff = writeOffRepository.save(writeOff);
-        auditLogService.log("WRITE_OFF", "system", "WriteOff", writeOff.getId());
+        writeOffRepository.save(writeOff);
     }
 
     private WriteOffDto toDto(WriteOff writeOff) {

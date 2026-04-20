@@ -35,6 +35,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -47,6 +49,8 @@ import java.util.Optional;
 @Slf4j
 public class SaleService {
 
+    private static final long EXPIRING_SOON_DAYS = 30;
+
     private final SaleRepository saleRepository;
     private final DrugRepository drugRepository;
     private final StockRepository stockRepository;
@@ -56,9 +60,6 @@ public class SaleService {
     private final BenefitPolicyService benefitPolicyService;
     private final AvestEdsGateway avestEdsGateway;
     private final ReceiptService receiptService;
-    private final InventoryPolicyService inventoryPolicyService;
-    private final PrescriptionService prescriptionService;
-    private final AuditLogService auditLogService;
 
     @Transactional
     public SaleDto createSale(SaleCreateRequest request, String username) {
@@ -110,7 +111,7 @@ public class SaleService {
             totalBeforeDiscount = totalBeforeDiscount.add(lineBase);
             totalDiscount = totalDiscount.add(lineDiscount);
 
-            inventoryPolicyService.deductByFefo(drug.getId(), qty);
+            decreaseStock(stock, qty);
             if (stock.getQuantity() <= drug.getMinQuantity()) {
                 lowStockNotifier.notifyLowStock(drug, stock.getQuantity(), drug.getMinQuantity());
             }
@@ -124,7 +125,6 @@ public class SaleService {
         sale.setEdsProvider(edsRequired ? request.edsProvider() : null);
         sale.setPrescriptionNumber(edsRequired ? request.prescriptionNumber() : null);
         sale.setStatus(SaleStatus.COMPLETED);
-        sale.setPrescription(linkedPrescription);
 
         sale.setTotalAmount(totalBeforeDiscount.subtract(totalDiscount));
         sale.setItems(items);
@@ -186,7 +186,6 @@ public class SaleService {
                 .orElseThrow(() -> new ResourceNotFoundException("Пользователь", username));
 
         boolean cardSale = request.medicalCardNumber() != null && !request.medicalCardNumber().isBlank();
-        Prescription linkedPrescription = request.prescriptionId() != null ? prescriptionService.findByIdRequired(request.prescriptionId()) : null;
         Sale sale = Sale.builder()
                 .user(user)
                 .paymentType(request.paymentType())
@@ -208,8 +207,8 @@ public class SaleService {
             Stock stock = stockRepository.findByDrugId(req.drugId())
                     .orElseThrow(() -> new ResourceNotFoundException("Остаток", req.drugId()));
 
-            enforcePrescriptionPolicy(drug, linkedPrescription);
-            inventoryPolicyService.assertSellAllowed(stock);
+            validateExpiry(stock, drug);
+
             if (stock.getQuantity() < req.quantity()) {
                 throw new InsufficientStockException(drug.getName(), req.quantity(), Optional.of(stock.getQuantity()));
             }
@@ -231,7 +230,7 @@ public class SaleService {
                     .build();
             items.add(item);
 
-            inventoryPolicyService.deductByFefo(drug.getId(), req.quantity());
+            decreaseStock(stock, req.quantity());
             if (stock.getQuantity() <= drug.getMinQuantity()) {
                 lowStockNotifier.notifyLowStock(drug, stock.getQuantity(), drug.getMinQuantity());
             }
@@ -253,28 +252,30 @@ public class SaleService {
         return toResponseDto(saved);
     }
 
-
-
-    private void enforcePrescriptionPolicy(Drug drug, Prescription prescription) {
-        if (!Boolean.TRUE.equals(drug.getCategory().getRequiresPrescription())) {
+    private void validateExpiry(Stock stock, Drug drug) {
+        if (stock.getExpiresAt() == null) {
             return;
         }
-        if (prescription == null) {
-            throw new PrescriptionRequiredException("Для препарата " + drug.getName() + " требуется рецепт");
+
+        Instant now = Instant.now();
+        if (stock.getExpiresAt().isBefore(now)) {
+            throw new PharmaException("Нельзя продать просроченный препарат: " + drug.getName());
         }
-        if (prescription.getValidUntil() != null && prescription.getValidUntil().isBefore(java.time.LocalDate.now())) {
-            throw new PrescriptionRequiredException("Рецепт просрочен для препарата " + drug.getName());
-        }
-        if (Boolean.TRUE.equals(drug.getCategory().getRequiresVerification()) && !Boolean.TRUE.equals(prescription.getVerified())) {
-            throw new PrescriptionNotVerifiedException("Рецепт не верифицирован для препарата " + drug.getName());
+
+        Instant soonBorder = now.plus(EXPIRING_SOON_DAYS, ChronoUnit.DAYS);
+        if (stock.getExpiresAt().isBefore(soonBorder)) {
+            log.warn("Срок годности скоро истекает: drugId={}, drugName={}, expiresAt={}",
+                    drug.getId(), drug.getName(), stock.getExpiresAt());
         }
     }
 
-    private Prescription resolveLegacyPrescription(SaleCreateRequest request) {
-        if (request.prescriptionNumber() == null || request.prescriptionNumber().isBlank()) {
-            return null;
+    private void decreaseStock(Stock stock, int quantity) {
+        int newQuantity = stock.getQuantity() - quantity;
+        if (newQuantity < 0) {
+            throw new PharmaException("Недостаточный остаток для списания");
         }
-        return prescriptionService.findByCodeOrNull(request.prescriptionNumber());
+        stock.setQuantity(newQuantity);
+        stockRepository.save(stock);
     }
 
     private boolean validateEdsIfRequired(SaleCreateRequest request, boolean edsRequired) {

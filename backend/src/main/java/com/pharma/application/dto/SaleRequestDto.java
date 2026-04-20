@@ -11,7 +11,6 @@ import java.util.List;
 public record SaleRequestDto(
         @NotEmpty @Valid List<SaleRequestItemDto> items,
         @NotNull PaymentType paymentType,
-        @Size(min = 6, message = "medicalCardNumber должен содержать минимум 6 символов") String medicalCardNumber,
-        Long prescriptionId
+        @Size(min = 6, message = "medicalCardNumber должен содержать минимум 6 символов") String medicalCardNumber
 ) {
 }
