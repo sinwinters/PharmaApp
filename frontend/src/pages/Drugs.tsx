@@ -11,6 +11,7 @@ import {
 import { categoriesList } from '../api/categories'
 import { suppliersList } from '../api/suppliers'
 import { getApiErrorMessage } from '../api/client'
+import { useToastStore } from '../store/toastStore'
 
 export default function Drugs() {
   const [page, setPage] = useState(0)
@@ -22,6 +23,7 @@ export default function Drugs() {
   const [actionError, setActionError] = useState<string | null>(null)
 
   const queryClient = useQueryClient()
+  const pushToast = useToastStore((s) => s.push)
 
   useEffect(() => {
     setPage(0)
@@ -55,7 +57,7 @@ export default function Drugs() {
       setActionError(null)
       queryClient.invalidateQueries({ queryKey: ['drugs'] })
       setForm(null)
-      alert('Лекарство создано 💊')
+      pushToast('Лекарство успешно создано')
     },
     onError: (e) =>
       setActionError(getApiErrorMessage(e, 'Не удалось создать лекарство.')),
@@ -69,7 +71,7 @@ export default function Drugs() {
       queryClient.invalidateQueries({ queryKey: ['drugs'] })
       setEditing(null)
       setForm(null)
-      alert('Обновлено ✅')
+      pushToast('Лекарство успешно обновлено')
     },
     onError: (e) =>
       setActionError(getApiErrorMessage(e, 'Не удалось обновить лекарство.')),
@@ -80,21 +82,23 @@ export default function Drugs() {
     onSuccess: () => {
       setActionError(null)
       queryClient.invalidateQueries({ queryKey: ['drugs'] })
-      alert('Удалено 🗑️')
+      pushToast('Лекарство удалено')
     },
     onError: (e) =>
       setActionError(getApiErrorMessage(e, 'Не удалось удалить лекарство.')),
   })
 
-  const openCreate = () =>
+  const openCreate = () => {
+    setEditing(null)
     setForm({
       name: '',
-      categoryId: 0,
-      supplierId: 0,
+      categoryId: categories?.content[0]?.id ?? 0,
+      supplierId: suppliers?.content[0]?.id ?? 0,
       minQuantity: 10,
       unit: 'шт',
       basePrice: 0,
     })
+  }
 
   const openEdit = (d: DrugDto) => {
     setEditing(d)
@@ -108,73 +112,110 @@ export default function Drugs() {
     })
   }
 
+  const requestDelete = (id: number) => {
+    if (!window.confirm('Удалить лекарство? Это действие нельзя отменить.')) return
+    deleteMu.mutate(id)
+  }
+
+  const saveForm = () => {
+    if (!form || !form.name.trim() || form.categoryId <= 0 || form.supplierId <= 0) {
+      setActionError('Заполните название, категорию и поставщика.')
+      return
+    }
+
+    if (editing) {
+      updateMu.mutate({ id: editing.id, body: form })
+      return
+    }
+
+    createMu.mutate(form)
+  }
+
   return (
     <div>
       <h1 className="page-header">Лекарства</h1>
 
-      {actionError && <p style={{ color: '#b42318' }}>{actionError}</p>}
+      {actionError && <p className="error-text">{actionError}</p>}
       {isFetching && !isLoading && <p>Обновляем список...</p>}
 
-      {/* FILTERS */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
-        <input
-          placeholder="Поиск"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
+      <div className="page-actions">
+        <input className="input" placeholder="Поиск" value={name} onChange={(e) => setName(e.target.value)} />
 
-        <select value={categoryId} onChange={(e) => setCategoryId(e.target.value === '' ? '' : Number(e.target.value))}>
+        <select className="select" value={categoryId} onChange={(e) => setCategoryId(e.target.value === '' ? '' : Number(e.target.value))}>
           <option value="">Все категории</option>
           {categories?.content.map((c) => (
-            <option key={c.id} value={c.id}>
-              {c.name}
-            </option>
+            <option key={c.id} value={c.id}>{c.name}</option>
           ))}
         </select>
 
-        <select value={supplierId} onChange={(e) => setSupplierId(e.target.value === '' ? '' : Number(e.target.value))}>
+        <select className="select" value={supplierId} onChange={(e) => setSupplierId(e.target.value === '' ? '' : Number(e.target.value))}>
           <option value="">Все поставщики</option>
           {suppliers?.content.map((s) => (
-            <option key={s.id} value={s.id}>
-              {s.name}
-            </option>
+            <option key={s.id} value={s.id}>{s.name}</option>
           ))}
         </select>
 
-        <button onClick={openCreate}>Добавить</button>
+        <button className="btn" onClick={openCreate}>Добавить</button>
       </div>
 
-      {/* LIST */}
+      {form && (
+        <div className="card" style={{ marginBottom: 16 }}>
+          <h3>{editing ? 'Редактирование лекарства' : 'Новое лекарство'}</h3>
+          <div className="page-actions">
+            <input className="input" value={form.name} placeholder="Название" onChange={(e) => setForm({ ...form, name: e.target.value })} />
+            <select className="select" value={form.categoryId} onChange={(e) => setForm({ ...form, categoryId: Number(e.target.value) })}>
+              {categories?.content.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <select className="select" value={form.supplierId} onChange={(e) => setForm({ ...form, supplierId: Number(e.target.value) })}>
+              {suppliers?.content.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+            <input className="input" type="number" min={0} value={form.minQuantity} onChange={(e) => setForm({ ...form, minQuantity: Number(e.target.value) })} placeholder="Мин. остаток" />
+            <input className="input" value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="Ед. измерения" />
+            <input className="input" type="number" min={0} step="0.01" value={form.basePrice} onChange={(e) => setForm({ ...form, basePrice: Number(e.target.value) })} placeholder="Цена" />
+            <button className="btn" onClick={saveForm} disabled={createMu.isPending || updateMu.isPending}>Сохранить</button>
+            <button className="btn btn-secondary" onClick={() => { setForm(null); setEditing(null) }}>Отмена</button>
+          </div>
+        </div>
+      )}
+
       {isLoading ? (
         <p>Загрузка...</p>
       ) : isError ? (
-        <p style={{ color: '#b42318' }}>
-          {getApiErrorMessage(error, 'Ошибка загрузки лекарств')}
-        </p>
+        <p className="error-text">{getApiErrorMessage(error, 'Ошибка загрузки лекарств')}</p>
       ) : (
         <>
           {data?.content.length === 0 ? (
             <p>Ничего не найдено</p>
           ) : (
-            <table style={{ width: '100%', background: '#fff' }}>
-              <tbody>
-                {data?.content.map((d) => (
-                  <tr key={d.id}>
-                    <td>{d.name}</td>
-                    <td>{d.categoryName}</td>
-                    <td>{d.supplierName}</td>
-                    <td>{d.stockQuantity}</td>
-                    <td>{d.basePrice}</td>
-                    <td>
-                      <button onClick={() => openEdit(d)}>Изменить</button>
-                      <button onClick={() => deleteMu.mutate(d.id)}>Удалить</button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <div className="table-wrap">
+              <table className="table">
+                <tbody>
+                  {data?.content.map((d) => (
+                    <tr key={d.id}>
+                      <td>{d.name}</td>
+                      <td>{d.categoryName}</td>
+                      <td>{d.supplierName}</td>
+                      <td>{d.stockQuantity}</td>
+                      <td>{d.basePrice}</td>
+                      <td>
+                        <button className="btn btn-secondary" onClick={() => openEdit(d)}>Изменить</button>{' '}
+                        <button className="btn btn-danger" onClick={() => requestDelete(d.id)}>Удалить</button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </>
+      )}
+
+      {data && data.totalPages > 1 && (
+        <div className="pagination">
+          <button className="btn btn-secondary" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>Назад</button>
+          <span>Стр. {page + 1} из {data.totalPages}</span>
+          <button className="btn btn-secondary" disabled={page >= data.totalPages - 1} onClick={() => setPage((p) => p + 1)}>Вперёд</button>
+        </div>
       )}
     </div>
   )

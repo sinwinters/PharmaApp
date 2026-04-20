@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { categoriesList, createCategory, updateCategory, deleteCategory, type CategoryDto } from '../api/categories'
 import { getApiErrorMessage } from '../api/client'
 import { useAuthStore } from '../store/authStore'
+import { useToastStore } from '../store/toastStore'
 import Spinner from '../components/Spinner'
 
 export default function Categories() {
@@ -14,6 +15,7 @@ export default function Categories() {
   const roleName = useAuthStore((s) => s.roleName)
   const canManage = roleName === 'ADMIN'
   const queryClient = useQueryClient()
+  const pushToast = useToastStore((s) => s.push)
 
   const { data, isLoading, isError, error, isFetching } = useQuery({
     queryKey: ['categories', page],
@@ -27,6 +29,7 @@ export default function Categories() {
       setName('')
       setDescription('')
       queryClient.invalidateQueries({ queryKey: ['categories'] })
+      pushToast('Категория создана')
     },
     onError: (e) => setActionError(getApiErrorMessage(e, 'Не удалось создать категорию.')),
   })
@@ -39,6 +42,7 @@ export default function Categories() {
       setName('')
       setDescription('')
       queryClient.invalidateQueries({ queryKey: ['categories'] })
+      pushToast('Категория обновлена')
     },
     onError: (e) => setActionError(getApiErrorMessage(e, 'Не удалось обновить категорию.')),
   })
@@ -48,6 +52,7 @@ export default function Categories() {
     onSuccess: () => {
       setActionError(null)
       queryClient.invalidateQueries({ queryKey: ['categories'] })
+      pushToast('Категория удалена')
     },
     onError: (e) => setActionError(getApiErrorMessage(e, 'Не удалось удалить категорию.')),
   })
@@ -71,43 +76,48 @@ export default function Categories() {
     setDescription(category.description ?? '')
   }
 
+  const requestDelete = (id: number) => {
+    if (!window.confirm('Удалить категорию? Это действие нельзя отменить.')) return
+    deleteMu.mutate(id)
+  }
+
   return (
     <div>
       <h1 className="page-header">Категории</h1>
       {canManage && (
-        <div style={{ background: '#fff', borderRadius: 8, padding: 16, marginBottom: 16 }}>
+        <div className="card" style={{ marginBottom: 16 }}>
           <h3>{editing ? 'Редактирование категории' : 'Новая категория'}</h3>
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <input placeholder="Название" value={name} onChange={(e) => setName(e.target.value)} style={{ padding: 8, minWidth: 250 }} />
-            <input placeholder="Описание" value={description} onChange={(e) => setDescription(e.target.value)} style={{ padding: 8, minWidth: 300 }} />
-            <button onClick={submit} disabled={createMu.isPending || updateMu.isPending}>Сохранить</button>
-            {editing && <button onClick={() => { setEditing(null); setName(''); setDescription('') }}>Отмена</button>}
+          <div className="page-actions">
+            <input className="input" placeholder="Название" value={name} onChange={(e) => setName(e.target.value)} style={{ minWidth: 250 }} />
+            <input className="input" placeholder="Описание" value={description} onChange={(e) => setDescription(e.target.value)} style={{ minWidth: 300 }} />
+            <button className="btn" onClick={submit} disabled={createMu.isPending || updateMu.isPending}>Сохранить</button>
+            {editing && <button className="btn btn-secondary" onClick={() => { setEditing(null); setName(''); setDescription('') }}>Отмена</button>}
           </div>
         </div>
       )}
-      {actionError && <p style={{ color: '#b42318' }}>{actionError}</p>}
+      {actionError && <p className="error-text">{actionError}</p>}
       {isFetching && !isLoading && <p>Обновляем список...</p>}
 
-      {isLoading ? <Spinner label="Загружаем категории..." /> : isError ? <p style={{ color: '#b42318' }}>{getApiErrorMessage(error, 'Не удалось загрузить категории.')}</p> : (
+      {isLoading ? <Spinner label="Загружаем категории..." /> : isError ? <p className="error-text">{getApiErrorMessage(error, 'Не удалось загрузить категории.')}</p> : (
         <div className="table-wrap"><table className="table">
           <thead>
-            <tr style={{ borderBottom: '2px solid #eee' }}>
-              <th style={{ textAlign: 'left', padding: 12 }}>ID</th>
-              <th style={{ textAlign: 'left', padding: 12 }}>Название</th>
-              <th style={{ textAlign: 'left', padding: 12 }}>Описание</th>
-              {canManage && <th style={{ textAlign: 'left', padding: 12 }}>Действия</th>}
+            <tr>
+              <th>ID</th>
+              <th>Название</th>
+              <th>Описание</th>
+              {canManage && <th>Действия</th>}
             </tr>
           </thead>
           <tbody>
             {data?.content.map((c) => (
-              <tr key={c.id} style={{ borderBottom: '1px solid #eee' }}>
-                <td style={{ padding: 12 }}>{c.id}</td>
-                <td style={{ padding: 12 }}>{c.name}</td>
-                <td style={{ padding: 12 }}>{c.description ?? '—'}</td>
+              <tr key={c.id}>
+                <td>{c.id}</td>
+                <td>{c.name}</td>
+                <td>{c.description ?? '—'}</td>
                 {canManage && (
-                  <td style={{ padding: 12 }}>
-                    <button onClick={() => startEdit(c)} style={{ marginRight: 8 }}>Изменить</button>
-                    <button onClick={() => deleteMu.mutate(c.id)}>Удалить</button>
+                  <td>
+                    <button className="btn btn-secondary" onClick={() => startEdit(c)} style={{ marginRight: 8 }}>Изменить</button>
+                    <button className="btn btn-danger" onClick={() => requestDelete(c.id)}>Удалить</button>
                   </td>
                 )}
               </tr>
@@ -116,10 +126,10 @@ export default function Categories() {
         </table></div>
       )}
       {data && data.totalPages > 1 && (
-        <div style={{ marginTop: 16 }}>
-          <button disabled={page === 0} onClick={() => setPage((p) => p - 1)}>Назад</button>
-          <span style={{ margin: '0 16px' }}>Стр. {page + 1} из {data.totalPages}</span>
-          <button disabled={page >= data.totalPages - 1} onClick={() => setPage((p) => p + 1)}>Вперёд</button>
+        <div className="pagination">
+          <button className="btn btn-secondary" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>Назад</button>
+          <span>Стр. {page + 1} из {data.totalPages}</span>
+          <button className="btn btn-secondary" disabled={page >= data.totalPages - 1} onClick={() => setPage((p) => p + 1)}>Вперёд</button>
         </div>
       )}
     </div>

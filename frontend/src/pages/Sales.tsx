@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { salesList, createSale, benefitsRbList, type SaleItemRequest } from '../api/sales'
 import { drugsApi } from '../api/drugs'
+import { getApiErrorMessage } from '../api/client'
+import { useToastStore } from '../store/toastStore'
 
 export default function Sales() {
   const [page, setPage] = useState(0)
@@ -13,6 +15,7 @@ export default function Sales() {
   const [edsSignature, setEdsSignature] = useState('')
   const [error, setError] = useState('')
   const queryClient = useQueryClient()
+  const pushToast = useToastStore((s) => s.push)
 
   const { data, isLoading } = useQuery({
     queryKey: ['sales', page],
@@ -39,9 +42,10 @@ export default function Sales() {
       setPrescriptionNumber('')
       setEdsSignature('')
       setError('')
+      pushToast('Продажа успешно проведена')
     },
-    onError: (e: any) => {
-      setError(e?.response?.data?.error ?? 'Не удалось провести продажу')
+    onError: (e) => {
+      setError(getApiErrorMessage(e, 'Не удалось провести продажу'))
     },
   })
 
@@ -56,7 +60,7 @@ export default function Sales() {
     })
   }
 
-  const removeFromCart = (drugId: number) => setCart((c) => c.filter((x) => x.drugId !== drugId))
+  const removeFromCart = (targetDrugId: number) => setCart((c) => c.filter((x) => x.drugId !== targetDrugId))
 
   const selectedBenefit = benefits?.find((b) => b.code === benefitCode)
 
@@ -75,30 +79,30 @@ export default function Sales() {
 
   return (
     <div>
-      <h1>Продажи</h1>
+      <h1 className="page-header">Продажи</h1>
 
-      <div style={{ background: '#fff', padding: 16, marginBottom: 24, borderRadius: 8 }}>
+      <div className="card" style={{ marginBottom: 24 }}>
         <h3>Новая продажа</h3>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <select value={drugId} onChange={(e) => setDrugId(e.target.value === '' ? '' : Number(e.target.value))} style={{ padding: 8, minWidth: 240 }}>
+        <div className="page-actions">
+          <select className="select" value={drugId} onChange={(e) => setDrugId(e.target.value === '' ? '' : Number(e.target.value))} style={{ minWidth: 240 }}>
             <option value="">Выберите лекарство</option>
             {drugsData?.content.map((d) => (
               <option key={d.id} value={d.id}>{d.name} (остаток: {d.stockQuantity})</option>
             ))}
           </select>
-          <input type="number" min={1} value={qty} onChange={(e) => setQty(Number(e.target.value))} style={{ width: 60, padding: 8 }} />
-          <button onClick={addToCart} style={{ padding: '8px 16px' }}>Добавить</button>
+          <input className="input" type="number" min={1} value={qty} onChange={(e) => setQty(Number(e.target.value))} style={{ width: 70 }} />
+          <button className="btn" onClick={addToCart}>Добавить</button>
         </div>
 
-        <div style={{ marginTop: 12, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <select value={benefitCode} onChange={(e) => setBenefitCode(e.target.value)} style={{ padding: 8, minWidth: 320 }}>
+        <div className="page-actions" style={{ marginTop: 12 }}>
+          <select className="select" value={benefitCode} onChange={(e) => setBenefitCode(e.target.value)} style={{ minWidth: 320 }}>
             <option value="">Без льготы</option>
             {benefits?.map((b) => (
               <option key={b.code} value={b.code}>{b.title} ({b.discountPercent}%)</option>
             ))}
           </select>
-          <input placeholder="Электронный рецепт (номер)" value={prescriptionNumber} onChange={(e) => setPrescriptionNumber(e.target.value)} style={{ padding: 8, minWidth: 220 }} />
-          <input placeholder="ЭЦП Avest (подпись)" value={edsSignature} onChange={(e) => setEdsSignature(e.target.value)} style={{ padding: 8, minWidth: 220 }} />
+          <input className="input" placeholder="Электронный рецепт (номер)" value={prescriptionNumber} onChange={(e) => setPrescriptionNumber(e.target.value)} style={{ minWidth: 220 }} />
+          <input className="input" placeholder="ЭЦП Avest (подпись)" value={edsSignature} onChange={(e) => setEdsSignature(e.target.value)} style={{ minWidth: 220 }} />
         </div>
         {selectedBenefit && <p style={{ fontSize: 13, color: '#475569' }}>{selectedBenefit.lawReference}</p>}
 
@@ -108,12 +112,12 @@ export default function Sales() {
               {cart.map((item) => (
                 <li key={item.drugId} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
                   <span>{drugName(item.drugId)} × {item.quantity}</span>
-                  <button onClick={() => removeFromCart(item.drugId)}>Удалить</button>
+                  <button className="btn btn-danger" onClick={() => removeFromCart(item.drugId)}>Удалить</button>
                 </li>
               ))}
             </ul>
-            {error && <p style={{ color: 'crimson' }}>{error}</p>}
-            <button onClick={submitSale} disabled={createMu.isPending} style={{ marginTop: 8 }}>Провести продажу</button>
+            {error && <p className="error-text">{error}</p>}
+            <button className="btn" onClick={submitSale} disabled={createMu.isPending} style={{ marginTop: 8 }}>Провести продажу</button>
           </div>
         )}
       </div>
@@ -121,33 +125,35 @@ export default function Sales() {
       <h3>История продаж</h3>
       {isLoading ? <p>Загрузка...</p> : (
         <>
-          <table style={{ width: '100%', borderCollapse: 'collapse', background: '#fff' }}>
-            <thead>
-              <tr style={{ borderBottom: '2px solid #eee' }}>
-                <th style={{ textAlign: 'left', padding: 12 }}>ID</th>
-                <th style={{ textAlign: 'left', padding: 12 }}>Дата</th>
-                <th style={{ textAlign: 'left', padding: 12 }}>Кассир</th>
-                <th style={{ textAlign: 'left', padding: 12 }}>Льгота</th>
-                <th style={{ textAlign: 'right', padding: 12 }}>Сумма</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data?.content.map((s) => (
-                <tr key={s.id} style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: 12 }}>{s.id}</td>
-                  <td style={{ padding: 12 }}>{new Date(s.createdAt).toLocaleString()}</td>
-                  <td style={{ padding: 12 }}>{s.username}</td>
-                  <td style={{ padding: 12 }}>{s.benefitCode ?? '—'}</td>
-                  <td style={{ padding: 12, textAlign: 'right' }}>{s.totalAmount}</td>
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>ID</th>
+                  <th>Дата</th>
+                  <th>Кассир</th>
+                  <th>Льгота</th>
+                  <th style={{ textAlign: 'right' }}>Сумма</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {data?.content.map((s) => (
+                  <tr key={s.id}>
+                    <td>{s.id}</td>
+                    <td>{new Date(s.createdAt).toLocaleString()}</td>
+                    <td>{s.username}</td>
+                    <td>{s.benefitCode ?? '—'}</td>
+                    <td style={{ textAlign: 'right' }}>{s.totalAmount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           {data && data.totalPages > 1 && (
-            <div style={{ marginTop: 16 }}>
-              <button disabled={page === 0} onClick={() => setPage((p) => p - 1)}>Назад</button>
-              <span style={{ margin: '0 16px' }}>Стр. {page + 1} из {data.totalPages}</span>
-              <button disabled={page >= data.totalPages - 1} onClick={() => setPage((p) => p + 1)}>Вперёд</button>
+            <div className="pagination">
+              <button className="btn btn-secondary" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>Назад</button>
+              <span>Стр. {page + 1} из {data.totalPages}</span>
+              <button className="btn btn-secondary" disabled={page >= data.totalPages - 1} onClick={() => setPage((p) => p + 1)}>Вперёд</button>
             </div>
           )}
         </>
