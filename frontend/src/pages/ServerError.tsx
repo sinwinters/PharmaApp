@@ -9,11 +9,11 @@ export default function ServerError() {
       <div style={{ background: '#fff', padding: 24, borderRadius: 12, maxWidth: 520, textAlign: 'center' }}>
         <div style={{ fontSize: 64, marginBottom: 8 }}>☕🖥️</div>
         <h1>500</h1>
-        <p>Our server is taking a coffee break ☕</p>
-        <p style={{ color: '#667085' }}>Give it one sip and try again.</p>
+        <p>Внутренняя ошибка сервера.</p>
+        <p style={{ color: '#667085' }}>Повторите попытку чуть позже.</p>
         <div style={{ marginTop: 12, display: 'flex', gap: 8, justifyContent: 'center' }}>
-          <button className="btn" onClick={retry}>Retry</button>
-          <button className="btn btn-secondary" onClick={() => navigate('/')}>Go back to dashboard</button>
+          <button className="btn" onClick={retry}>Повторить</button>
+          <button className="btn btn-secondary" onClick={() => navigate('/')}>Вернуться на главную</button>
         </div>
       </div>
     </div>

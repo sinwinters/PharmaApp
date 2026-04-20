@@ -4,6 +4,7 @@ import { ordersList, createOrder } from '../api/orders'
 import { drugsApi } from '../api/drugs'
 import { suppliersList } from '../api/suppliers'
 import { getApiErrorMessage } from '../api/client'
+import { useToastStore } from '../store/toastStore'
 
 export default function Orders() {
   const [page, setPage] = useState(0)
@@ -14,6 +15,7 @@ export default function Orders() {
   const [actionError, setActionError] = useState<string | null>(null)
 
   const queryClient = useQueryClient()
+  const pushToast = useToastStore((s) => s.push)
 
   const { data, isLoading, isError, error, isFetching } = useQuery({
     queryKey: ['orders', page],
@@ -39,7 +41,7 @@ export default function Orders() {
       queryClient.invalidateQueries({ queryKey: ['orders'] })
       setSupplierId('')
       setItems([])
-      alert('Заказ успешно создан ✅')
+      pushToast('Заказ успешно создан')
     },
 
     onError: (e) => {
@@ -50,14 +52,10 @@ export default function Orders() {
   const addItem = () => {
     if (drugId === '' || qty < 1) return
 
-    setItems((prev) => [
-      ...prev,
-      { drugId: drugId as number, quantity: qty },
-    ])
+    setItems((prev) => [...prev, { drugId: drugId as number, quantity: qty }])
   }
 
-  const drugName = (id: number) =>
-    drugsData?.content.find((d) => d.id === id)?.name ?? id
+  const drugName = (id: number) => drugsData?.content.find((d) => d.id === id)?.name ?? id
 
   const handleCreateOrder = () => {
     if (supplierId === '' || items.length === 0) return
@@ -70,23 +68,20 @@ export default function Orders() {
 
   return (
     <div>
-      <h1>Заказы поставщикам</h1>
+      <h1 className="page-header">Заказы поставщикам</h1>
 
-      {actionError && <p style={{ color: '#b42318' }}>{actionError}</p>}
+      {actionError && <p className="error-text">{actionError}</p>}
       {isFetching && !isLoading && <p>Обновляем список...</p>}
 
-      {/* CREATE ORDER */}
-      <div style={{ background: '#fff', padding: 16, marginBottom: 24, borderRadius: 8 }}>
+      <div className="card" style={{ marginBottom: 24 }}>
         <h3>Новый заказ</h3>
 
         <div style={{ marginBottom: 12 }}>
           <label>Поставщик </label>
           <select
+            className="select"
             value={supplierId}
-            onChange={(e) =>
-              setSupplierId(e.target.value === '' ? '' : Number(e.target.value))
-            }
-            style={{ padding: 8, minWidth: 200 }}
+            onChange={(e) => setSupplierId(e.target.value === '' ? '' : Number(e.target.value))}
           >
             <option value="">Выберите поставщика</option>
             {suppliers?.content.map((s) => (
@@ -97,13 +92,11 @@ export default function Orders() {
           </select>
         </div>
 
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <div className="page-actions">
           <select
+            className="select"
             value={drugId}
-            onChange={(e) =>
-              setDrugId(e.target.value === '' ? '' : Number(e.target.value))
-            }
-            style={{ padding: 8, minWidth: 200 }}
+            onChange={(e) => setDrugId(e.target.value === '' ? '' : Number(e.target.value))}
           >
             <option value="">Лекарство</option>
             {drugsData?.content.map((d) => (
@@ -114,16 +107,15 @@ export default function Orders() {
           </select>
 
           <input
+            className="input"
             type="number"
             min={1}
             value={qty}
             onChange={(e) => setQty(Number(e.target.value))}
-            style={{ width: 60, padding: 8 }}
+            style={{ width: 70 }}
           />
 
-          <button onClick={addItem} style={{ padding: '8px 16px' }}>
-            Добавить
-          </button>
+          <button className="btn" onClick={addItem}>Добавить</button>
         </div>
 
         {items.length > 0 && (
@@ -137,9 +129,9 @@ export default function Orders() {
             </ul>
 
             <button
+              className="btn"
               onClick={handleCreateOrder}
               disabled={createMu.isPending || supplierId === '' || items.length === 0}
-              style={{ marginTop: 8 }}
             >
               Создать заказ
             </button>
@@ -147,59 +139,51 @@ export default function Orders() {
         )}
       </div>
 
-      {/* LIST */}
       <h3>Список заказов</h3>
 
       {isLoading ? (
         <p>Загрузка...</p>
       ) : isError ? (
-        <p style={{ color: '#b42318' }}>
-          {getApiErrorMessage(error, 'Не удалось загрузить список заказов.')}
-        </p>
+        <p className="error-text">{getApiErrorMessage(error, 'Не удалось загрузить список заказов.')}</p>
       ) : (
         <>
           {data?.content.length === 0 ? (
             <p>Пока нет заказов поставщикам.</p>
           ) : (
-            <table style={{ width: '100%', background: '#fff', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '2px solid #eee' }}>
-                  <th style={{ padding: 12 }}>ID</th>
-                  <th style={{ padding: 12 }}>Поставщик</th>
-                  <th style={{ padding: 12 }}>Статус</th>
-                  <th style={{ padding: 12 }}>Дата</th>
-                </tr>
-              </thead>
-
-              <tbody>
-                {data?.content.map((o) => (
-                  <tr key={o.id} style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: 12 }}>{o.id}</td>
-                    <td style={{ padding: 12 }}>{o.supplierName}</td>
-                    <td style={{ padding: 12 }}>{o.status}</td>
-                    <td style={{ padding: 12 }}>
-                      {new Date(o.createdAt).toLocaleString()}
-                    </td>
+            <div className="table-wrap">
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Поставщик</th>
+                    <th>Статус</th>
+                    <th>Дата</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+
+                <tbody>
+                  {data?.content.map((o) => (
+                    <tr key={o.id}>
+                      <td>{o.id}</td>
+                      <td>{o.supplierName}</td>
+                      <td>{o.status}</td>
+                      <td>{new Date(o.createdAt).toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
 
           {data && data.totalPages > 1 && (
-            <div style={{ marginTop: 16 }}>
-              <button disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
+            <div className="pagination">
+              <button className="btn btn-secondary" disabled={page === 0} onClick={() => setPage((p) => p - 1)}>
                 Назад
               </button>
 
-              <span style={{ margin: '0 16px' }}>
-                Стр. {page + 1} из {data.totalPages}
-              </span>
+              <span>Стр. {page + 1} из {data.totalPages}</span>
 
-              <button
-                disabled={page >= data.totalPages - 1}
-                onClick={() => setPage((p) => p + 1)}
-              >
+              <button className="btn btn-secondary" disabled={page >= data.totalPages - 1} onClick={() => setPage((p) => p + 1)}>
                 Вперёд
               </button>
             </div>

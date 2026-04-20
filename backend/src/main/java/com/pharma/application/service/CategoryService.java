@@ -8,7 +8,10 @@ import com.pharma.infrastructure.config.CacheConfig;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,7 +24,6 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
 
-    // 👇 Кэшируем НЕ Page, а свою обёртку
     @Transactional(readOnly = true)
     @Cacheable(
             cacheNames = CacheConfig.CACHE_CATEGORIES,
@@ -38,7 +40,6 @@ public class CategoryService {
         );
     }
 
-    // 👇 Публичный метод возвращает обычный Page
     @Transactional(readOnly = true)
     public Page<CategoryDto> findAll(Pageable pageable) {
         CachedPage<CategoryDto> cached = findAllCached(pageable);
@@ -60,9 +61,22 @@ public class CategoryService {
     @Transactional
     @CacheEvict(cacheNames = CacheConfig.CACHE_CATEGORIES, allEntries = true)
     public CategoryDto create(String name, String description) {
+        return create(name, description, false, false, false);
+    }
+
+    @Transactional
+    @CacheEvict(cacheNames = CacheConfig.CACHE_CATEGORIES, allEntries = true)
+    public CategoryDto create(String name,
+                              String description,
+                              Boolean requiresPrescription,
+                              Boolean requiresStrictControl,
+                              Boolean requiresVerification) {
         Category c = Category.builder()
                 .name(name)
                 .description(description)
+                .requiresPrescription(Boolean.TRUE.equals(requiresPrescription))
+                .requiresStrictControl(Boolean.TRUE.equals(requiresStrictControl))
+                .requiresVerification(Boolean.TRUE.equals(requiresVerification))
                 .build();
 
         return toDto(categoryRepository.save(c));
@@ -71,11 +85,25 @@ public class CategoryService {
     @Transactional
     @CacheEvict(cacheNames = CacheConfig.CACHE_CATEGORIES, allEntries = true)
     public CategoryDto update(Long id, String name, String description) {
+        return update(id, name, description, false, false, false);
+    }
+
+    @Transactional
+    @CacheEvict(cacheNames = CacheConfig.CACHE_CATEGORIES, allEntries = true)
+    public CategoryDto update(Long id,
+                              String name,
+                              String description,
+                              Boolean requiresPrescription,
+                              Boolean requiresStrictControl,
+                              Boolean requiresVerification) {
         Category c = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Категория", id));
 
         c.setName(name);
         c.setDescription(description);
+        c.setRequiresPrescription(Boolean.TRUE.equals(requiresPrescription));
+        c.setRequiresStrictControl(Boolean.TRUE.equals(requiresStrictControl));
+        c.setRequiresVerification(Boolean.TRUE.equals(requiresVerification));
 
         return toDto(categoryRepository.save(c));
     }
@@ -90,10 +118,16 @@ public class CategoryService {
     }
 
     private CategoryDto toDto(Category c) {
-        return new CategoryDto(c.getId(), c.getName(), c.getDescription());
+        return new CategoryDto(
+                c.getId(),
+                c.getName(),
+                c.getDescription(),
+                c.getRequiresPrescription(),
+                c.getRequiresStrictControl(),
+                c.getRequiresVerification()
+        );
     }
 
-    // 👇 Простая сериализуемая обёртка
     public static class CachedPage<T> implements Serializable {
         private List<T> content;
         private int page;

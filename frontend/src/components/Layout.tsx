@@ -58,7 +58,7 @@ export default function Layout() {
           )}
         </ul>
         {username && roleName && <div className="top-user">{username} | {roleName}</div>}
-        <button onClick={handleLogout}>Выход</button>
+        <button className="btn btn-secondary" onClick={handleLogout}>Выход</button>
       </nav>
       <main className="content">
         <Outlet />

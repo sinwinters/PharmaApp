@@ -23,7 +23,7 @@ export default function Login() {
       setTokens(res.accessToken, res.refreshToken)
       const currentUser = await me()
       setUserInfo(currentUser.username, currentUser.roleName)
-      pushToast('Login successful 👋')
+      pushToast('Вы успешно вошли в систему')
       navigate('/')
     } catch {
       setError('Неверный логин или пароль')
@@ -46,7 +46,7 @@ export default function Login() {
             <input type="password" {...register('password', { required: true })} placeholder="Введите пароль" />
           </div>
           {error && <p className="error-msg">{error}</p>}
-          <button type="submit">Войти</button>
+          <button className="btn" type="submit">Войти</button>
         </form>
 
         <p>

@@ -2,6 +2,8 @@ package com.pharma.domain.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -19,6 +21,7 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.time.LocalDate;
 
 @Entity
 @Table(name = "stock", uniqueConstraints = @UniqueConstraint(columnNames = "drug_id"))
@@ -40,6 +43,21 @@ public class Stock {
     @Column(nullable = false)
     @Builder.Default
     private Integer quantity = 0;
+
+    @Column(name = "reserved_quantity", nullable = false)
+    @Builder.Default
+    private Integer reservedQuantity = 0;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private StockStatus status = StockStatus.AVAILABLE;
+
+    @Column(name = "expiration_date")
+    private LocalDate expirationDate;
+
+    @Column(name = "expires_at")
+    private Instant expiresAt;
 
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;

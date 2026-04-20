@@ -50,6 +50,7 @@ dependencies {
     // PostgreSQL + Flyway
     runtimeOnly("org.postgresql:postgresql")
     implementation("org.flywaydb:flyway-core")
+    implementation("org.apache.poi:poi-ooxml:5.2.5")
 
     // Lombok
     compileOnly("org.projectlombok:lombok")
